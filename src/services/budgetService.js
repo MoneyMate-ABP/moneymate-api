@@ -24,23 +24,22 @@ async function getBudgetPeriodById(userId, budgetPeriodId) {
     .first();
 }
 
-async function getSpentMapByDate({
-  userId,
-  budgetPeriodId,
-  startDate,
-  endDate,
-}) {
-  const rows = await db("transactions")
+async function getSpentMapByDate({ userId, categoryId, startDate, endDate }) {
+  const query = db("transactions")
     .select("date")
     .sum({ total: "amount" })
     .where({
       user_id: userId,
-      budget_period_id: budgetPeriodId,
       type: "expense",
     })
     .andWhere("date", ">=", toDateString(startDate))
-    .andWhere("date", "<=", toDateString(endDate))
-    .groupBy("date");
+    .andWhere("date", "<=", toDateString(endDate));
+
+  if (categoryId) {
+    query.andWhere("category_id", categoryId);
+  }
+
+  const rows = await query.groupBy("date");
 
   const map = new Map();
   for (const row of rows) {
@@ -62,7 +61,7 @@ async function getDailyStatus(budgetPeriod, targetDate) {
   const days = listDatesInclusive(startDate, targetDate);
   const spentMap = await getSpentMapByDate({
     userId: budgetPeriod.user_id,
-    budgetPeriodId: budgetPeriod.id,
+    categoryId: budgetPeriod.category_id,
     startDate,
     endDate: targetDate,
   });
