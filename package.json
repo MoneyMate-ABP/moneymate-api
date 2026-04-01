@@ -1,7 +1,7 @@
 {
   "name": "moneymate-api",
   "version": "1.0.0",
-  "description": "",
+  "description": "MoneyMate Expense Tracker backend API",
   "homepage": "https://github.com/MoneyMate-ABP/moneymate-api#readme",
   "bugs": {
     "url": "https://github.com/MoneyMate-ABP/moneymate-api/issues"
@@ -15,6 +15,34 @@
   "type": "commonjs",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "nodemon src/server.js",
+    "start": "node src/server.js",
+    "migrate": "knex --knexfile knexfile.js migrate:latest",
+    "migrate:rollback": "knex --knexfile knexfile.js migrate:rollback",
+    "migrate:fresh": "knex --knexfile knexfile.js migrate:rollback --all && npm run migrate && npm run seed",
+    "migrate:make": "knex --knexfile knexfile.js migrate:make",
+    "seed": "knex --knexfile knexfile.js seed:run",
+    "seed:make": "knex --knexfile knexfile.js seed:make",
+    "test": "node --test"
+  },
+  "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "cors": "^2.8.6",
+    "date-fns": "^4.1.0",
+    "dotenv": "^17.3.1",
+    "express": "^5.2.1",
+    "helmet": "^8.1.0",
+    "jsonwebtoken": "^9.0.3",
+    "knex": "^3.2.8",
+    "morgan": "^1.10.1",
+    "mysql2": "^3.20.0",
+    "node-cron": "^4.2.1",
+    "pg": "^8.20.0",
+    "swagger-jsdoc": "^6.2.8",
+    "swagger-ui-express": "^5.0.1",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.14"
   }
 }
