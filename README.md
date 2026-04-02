@@ -152,11 +152,6 @@ Masuk client MySQL dari container DB:
 docker compose exec db mysql -u root -p"$MYSQL_ROOT_PASSWORD"
 ```
 
-Catatan:
-
-- Stack ini menggunakan Node.js + MySQL, jadi tidak ada command `artisan`.
-- Pengganti `artisan migrate` adalah `npm run migrate` (atau via `docker compose exec api npm run migrate`).
-
 Swagger docs:
 
 - UI: `http://localhost:3000/api-docs`
