@@ -61,6 +61,102 @@ npm run dev
 
 Server starts on `http://localhost:3000`.
 
+## Run with Docker
+
+1. Buat Docker env file dari template:
+
+```bash
+cp .env.docker.example .env.docker
+```
+
+2. Ubah secret di `.env.docker` (wajib):
+
+- `JWT_SECRET`
+- `MYSQL_ROOT_PASSWORD`
+- `DB_PASSWORD` dan `MYSQL_PASSWORD`
+
+3. Build dan jalankan service API + MySQL:
+
+```bash
+docker compose up --build
+```
+
+4. Akses API di:
+
+- `http://localhost:3000`
+- Swagger UI: `http://localhost:3000/api-docs`
+
+5. Akses MySQL host machine (opsional):
+
+- Host: `127.0.0.1`
+- Port: `3307`
+- User: sesuai `DB_USER` di `.env.docker`
+- Password: sesuai `DB_PASSWORD` di `.env.docker`
+- DB: sesuai `DB_NAME` di `.env.docker`
+
+Perintah tambahan:
+
+- Stop containers:
+
+```bash
+docker compose down
+```
+
+- Stop + hapus data MySQL volume:
+
+```bash
+docker compose down -v
+```
+
+Keamanan:
+
+- `docker-compose.yml` tidak menyimpan secret lagi.
+- Gunakan `.env.docker` untuk local/dev dan jangan commit file tersebut.
+- Untuk production, gunakan secret manager atau Docker secrets.
+
+### Docker CLI Cheat Sheet
+
+Masuk shell container API:
+
+```bash
+docker compose exec api sh
+```
+
+Jalankan migration di container API:
+
+```bash
+docker compose exec api npm run migrate
+```
+
+Jalankan seed di container API:
+
+```bash
+docker compose exec api npm run seed
+```
+
+Jalankan migrate fresh di container API:
+
+```bash
+docker compose exec api npm run migrate:fresh
+```
+
+Masuk shell container MySQL:
+
+```bash
+docker compose exec db sh
+```
+
+Masuk client MySQL dari container DB:
+
+```bash
+docker compose exec db mysql -u root -p"$MYSQL_ROOT_PASSWORD"
+```
+
+Catatan:
+
+- Stack ini menggunakan Node.js + MySQL, jadi tidak ada command `artisan`.
+- Pengganti `artisan migrate` adalah `npm run migrate` (atau via `docker compose exec api npm run migrate`).
+
 Swagger docs:
 
 - UI: `http://localhost:3000/api-docs`
