@@ -14,6 +14,10 @@ const options = {
         url: "http://localhost:3000",
         description: "Local development",
       },
+      {
+        url: "https://anandabintang.web.id",
+        description: "Production server",
+      },
     ],
     tags: [
       { name: "Health", description: "Service health check" },
