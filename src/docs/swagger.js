@@ -11,12 +11,12 @@ const options = {
     },
     servers: [
       {
-        url: "http://localhost:3000",
-        description: "Local development",
-      },
-      {
         url: "https://anandabintang.web.id",
         description: "Production server",
+      },
+      {
+        url: "http://localhost:3000",
+        description: "Local development",
       },
     ],
     tags: [
