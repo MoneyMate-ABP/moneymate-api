@@ -5,6 +5,7 @@ Backend for MoneyMate Expense Tracker using Express.js, JWT, and SQL (PostgreSQL
 ## Features
 
 - JWT auth: register, login, logout (token revocation)
+- Google login via Firebase ID token
 - Default categories: Makanan, Transportasi, Hiburan, Lainnya
 - Transactions: create, edit, delete, filter by date/type/category
 - Budget periods: multiple active periods supported
@@ -36,24 +37,30 @@ cp .env.example .env
 
 3. Adjust DB credentials in `.env`.
 
-4. Database creation:
+4. (Opsional, untuk Google login) isi kredensial Firebase Admin di `.env`:
+
+- `FIREBASE_PROJECT_ID`
+- `FIREBASE_CLIENT_EMAIL`
+- `FIREBASE_PRIVATE_KEY` (gunakan escaped new line: `\\n`)
+
+5. Database creation:
 
 - If the DB does not exist yet, server startup will attempt to auto-create it (PostgreSQL/MySQL).
 - The DB user in `.env` must have permission to create database.
 
-5. Jalankan migration:
+6. Jalankan migration:
 
 ```bash
 npm run migrate
 ```
 
-6. Jalankan seed default data:
+7. Jalankan seed default data:
 
 ```bash
 npm run seed
 ```
 
-7. Run API in dev mode:
+8. Run API in dev mode:
 
 ```bash
 npm run dev
@@ -163,6 +170,7 @@ Swagger docs:
 
 - `POST /api/auth/register`
 - `POST /api/auth/login`
+- `POST /api/auth/google`
 - `POST /api/auth/logout`
 
 ### Transactions

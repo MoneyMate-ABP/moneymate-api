@@ -99,6 +99,17 @@ const options = {
           },
           required: ["email", "password"],
         },
+        GoogleLoginRequest: {
+          type: "object",
+          properties: {
+            idToken: {
+              type: "string",
+              description: "Firebase ID token dari client app",
+              example: "eyJhbGciOiJSUzI1NiIsImtpZCI6Ij...",
+            },
+          },
+          required: ["idToken"],
+        },
         Category: {
           type: "object",
           properties: {
@@ -486,6 +497,46 @@ const options = {
             },
             401: {
               description: "Invalid email/password",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/ErrorResponse" },
+                },
+              },
+            },
+          },
+        },
+      },
+      "/api/auth/google": {
+        post: {
+          tags: ["Auth"],
+          summary: "Login/Register dengan Google (Firebase ID token)",
+          requestBody: {
+            required: true,
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/GoogleLoginRequest" },
+              },
+            },
+          },
+          responses: {
+            200: {
+              description: "Google login success",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/AuthSuccessResponse" },
+                },
+              },
+            },
+            201: {
+              description: "User auto-registered via Google",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/AuthSuccessResponse" },
+                },
+              },
+            },
+            401: {
+              description: "Invalid Firebase ID token",
               content: {
                 "application/json": {
                   schema: { $ref: "#/components/schemas/ErrorResponse" },
