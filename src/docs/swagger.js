@@ -445,7 +445,7 @@ const options = {
       "/api/auth/register": {
         post: {
           tags: ["Auth"],
-          summary: "Register user baru",
+          summary: "Register user baru (local auth)",
           requestBody: {
             required: true,
             content: {
@@ -477,7 +477,7 @@ const options = {
       "/api/auth/login": {
         post: {
           tags: ["Auth"],
-          summary: "Login user",
+          summary: "Login user (local auth)",
           requestBody: {
             required: true,
             content: {
@@ -496,7 +496,8 @@ const options = {
               },
             },
             401: {
-              description: "Invalid email/password",
+              description:
+                "Invalid email/password atau akun hanya bisa login via Google",
               content: {
                 "application/json": {
                   schema: { $ref: "#/components/schemas/ErrorResponse" },
@@ -510,6 +511,8 @@ const options = {
         post: {
           tags: ["Auth"],
           summary: "Login/Register dengan Google (Firebase ID token)",
+          description:
+            "Verifikasi Firebase ID token, ambil uid/email/name, auto-register jika user belum ada, lalu keluarkan JWT internal.",
           requestBody: {
             required: true,
             content: {
@@ -537,6 +540,22 @@ const options = {
             },
             401: {
               description: "Invalid Firebase ID token",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/ErrorResponse" },
+                },
+              },
+            },
+            400: {
+              description: "Firebase token tidak mengandung email",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/ErrorResponse" },
+                },
+              },
+            },
+            409: {
+              description: "Email sudah terhubung ke Google account lain",
               content: {
                 "application/json": {
                   schema: { $ref: "#/components/schemas/ErrorResponse" },

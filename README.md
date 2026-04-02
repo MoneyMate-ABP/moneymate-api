@@ -81,6 +81,7 @@ cp .env.docker.example .env.docker
 - `JWT_SECRET`
 - `MYSQL_ROOT_PASSWORD`
 - `DB_PASSWORD` dan `MYSQL_PASSWORD`
+- `FIREBASE_PROJECT_ID`, `FIREBASE_CLIENT_EMAIL`, `FIREBASE_PRIVATE_KEY` (wajib jika menggunakan `POST /api/auth/google`)
 
 3. Build dan jalankan service API + MySQL:
 
@@ -172,6 +173,28 @@ Swagger docs:
 - `POST /api/auth/login`
 - `POST /api/auth/google`
 - `POST /api/auth/logout`
+
+#### Auth Flow
+
+- `POST /api/auth/register`: register akun local (email + password)
+- `POST /api/auth/login`: login akun local (email + password)
+- `POST /api/auth/google`: login dengan Firebase ID token, auto-register jika user belum ada
+- `POST /api/auth/logout`: revoke JWT internal
+
+Contoh payload Google login:
+
+```json
+{
+	"idToken": "<firebase-id-token>"
+}
+```
+
+Catatan perilaku Google login:
+
+- Backend memverifikasi ID token ke Firebase Admin SDK
+- Data yang dipakai dari token: `uid`, `email`, `name`
+- Jika user belum ada, user baru dibuat dengan `auth_provider=google` dan `password=null`
+- Jika user sudah ada, backend tetap mengeluarkan JWT internal untuk API MoneyMate
 
 ### Transactions
 
