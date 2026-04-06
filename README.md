@@ -230,6 +230,7 @@ Catatan perilaku Google login:
 - Seeder `002_dummy_user_budget_transactions.js` menambahkan data dummy:
 	- User: `dummy@test.com` (password: `password123`)
 	- Budget period: `Budget April 2026` (`2026-04-01` s/d `2026-04-30`, total `1000000`)
+	- Income awal (gaji): `5500000` pada `2026-04-01`
 	- Transaction tanggal `2026-04-01` s/d `2026-04-05`: `30000`, `50000`, `43000`, `63000`, `15000`
 - Useful commands:
 - `npm run migrate`

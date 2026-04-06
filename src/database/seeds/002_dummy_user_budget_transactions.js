@@ -18,11 +18,17 @@ const DUMMY_BUDGET = {
   endDate: "2026-04-30",
 };
 
+const DUMMY_INCOME_TRANSACTION = {
+  amount: 5500000,
+  date: "2026-04-01",
+  note: "seed:dummy-apr-2026-salary-income",
+};
+
 const DUMMY_TRANSACTIONS = [30000, 50000, 43000, 63000, 15000].map(
   (amount, index) => ({
     amount,
     date: `2026-04-0${index + 1}`,
-    note: `seed:dummy-apr-2026-day-${index + 1}`,
+    note: `seed:dummy-apr-2026-expense-day-${index + 1}`,
   }),
 );
 
@@ -30,16 +36,16 @@ function roundTo2(value) {
   return Math.round((Number(value) + Number.EPSILON) * 100) / 100;
 }
 
-async function ensureExpenseCategory(knex) {
-  let category = await knex("categories").where({ name: "Makanan" }).first();
+async function ensureCategory(knex, name, type) {
+  let category = await knex("categories").where({ name }).first();
 
   if (!category) {
     await knex("categories").insert({
-      name: "Makanan",
-      type: "expense",
+      name,
+      type,
     });
 
-    category = await knex("categories").where({ name: "Makanan" }).first();
+    category = await knex("categories").where({ name }).first();
   }
 
   return category;
@@ -131,9 +137,35 @@ async function ensureDummyBudgetPeriod(knex, userId, categoryId) {
 async function upsertDummyTransactions(
   knex,
   userId,
-  categoryId,
+  expenseCategoryId,
+  incomeCategoryId,
   budgetPeriodId,
 ) {
+  const existingIncome = await knex("transactions")
+    .where({
+      user_id: userId,
+      note: DUMMY_INCOME_TRANSACTION.note,
+    })
+    .first();
+
+  const incomePayload = {
+    user_id: userId,
+    category_id: incomeCategoryId,
+    budget_period_id: null,
+    type: "income",
+    amount: DUMMY_INCOME_TRANSACTION.amount,
+    note: DUMMY_INCOME_TRANSACTION.note,
+    date: DUMMY_INCOME_TRANSACTION.date,
+  };
+
+  if (!existingIncome) {
+    await knex("transactions").insert(incomePayload);
+  } else {
+    await knex("transactions")
+      .where({ id: existingIncome.id })
+      .update(incomePayload);
+  }
+
   for (const transaction of DUMMY_TRANSACTIONS) {
     const existing = await knex("transactions")
       .where({
@@ -144,7 +176,7 @@ async function upsertDummyTransactions(
 
     const payload = {
       user_id: userId,
-      category_id: categoryId,
+      category_id: expenseCategoryId,
       budget_period_id: budgetPeriodId,
       type: "expense",
       amount: transaction.amount,
@@ -162,13 +194,20 @@ async function upsertDummyTransactions(
 }
 
 exports.seed = async function seed(knex) {
-  const category = await ensureExpenseCategory(knex);
+  const expenseCategory = await ensureCategory(knex, "Makanan", "expense");
+  const incomeCategory = await ensureCategory(knex, "Gaji", "income");
   const user = await ensureDummyUser(knex);
   const budgetPeriod = await ensureDummyBudgetPeriod(
     knex,
     user.id,
-    category.id,
+    expenseCategory.id,
   );
 
-  await upsertDummyTransactions(knex, user.id, category.id, budgetPeriod.id);
+  await upsertDummyTransactions(
+    knex,
+    user.id,
+    expenseCategory.id,
+    incomeCategory.id,
+    budgetPeriod.id,
+  );
 };
