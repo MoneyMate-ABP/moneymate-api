@@ -1,4 +1,5 @@
 const DEFAULT_CATEGORIES = [
+  { name: "Gaji", type: "income" },
   { name: "Makanan", type: "expense" },
   { name: "Transportasi", type: "expense" },
   { name: "Hiburan", type: "expense" },

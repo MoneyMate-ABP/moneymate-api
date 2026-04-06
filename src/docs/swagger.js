@@ -133,6 +133,37 @@ const options = {
           },
           required: ["data"],
         },
+        CreateCategoryRequest: {
+          type: "object",
+          properties: {
+            name: { type: "string", example: "Belanja" },
+            type: {
+              type: "string",
+              enum: ["income", "expense", "both"],
+              example: "expense",
+            },
+          },
+          required: ["name"],
+        },
+        UpdateCategoryRequest: {
+          type: "object",
+          properties: {
+            name: { type: "string", example: "Belanja Harian" },
+            type: {
+              type: "string",
+              enum: ["income", "expense", "both"],
+              example: "expense",
+            },
+          },
+        },
+        CategoryMutationResponse: {
+          type: "object",
+          properties: {
+            message: { type: "string", example: "Category created." },
+            data: { $ref: "#/components/schemas/Category" },
+          },
+          required: ["message"],
+        },
         Transaction: {
           type: "object",
           properties: {
@@ -614,6 +645,164 @@ const options = {
             },
             401: {
               description: "Unauthorized",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/ErrorResponse" },
+                },
+              },
+            },
+          },
+        },
+        post: {
+          tags: ["Categories"],
+          summary: "Tambah kategori",
+          security: [{ bearerAuth: [] }],
+          requestBody: {
+            required: true,
+            content: {
+              "application/json": {
+                schema: {
+                  $ref: "#/components/schemas/CreateCategoryRequest",
+                },
+              },
+            },
+          },
+          responses: {
+            201: {
+              description: "Category created",
+              content: {
+                "application/json": {
+                  schema: {
+                    $ref: "#/components/schemas/CategoryMutationResponse",
+                  },
+                },
+              },
+            },
+            401: {
+              description: "Unauthorized",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/ErrorResponse" },
+                },
+              },
+            },
+            409: {
+              description: "Category name already exists",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/ErrorResponse" },
+                },
+              },
+            },
+          },
+        },
+      },
+      "/api/categories/{id}": {
+        put: {
+          tags: ["Categories"],
+          summary: "Update kategori",
+          security: [{ bearerAuth: [] }],
+          parameters: [
+            {
+              in: "path",
+              name: "id",
+              required: true,
+              schema: { type: "integer" },
+              description: "Category id",
+            },
+          ],
+          requestBody: {
+            required: true,
+            content: {
+              "application/json": {
+                schema: {
+                  $ref: "#/components/schemas/UpdateCategoryRequest",
+                },
+              },
+            },
+          },
+          responses: {
+            200: {
+              description: "Category updated",
+              content: {
+                "application/json": {
+                  schema: {
+                    $ref: "#/components/schemas/CategoryMutationResponse",
+                  },
+                },
+              },
+            },
+            401: {
+              description: "Unauthorized",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/ErrorResponse" },
+                },
+              },
+            },
+            404: {
+              description: "Category not found",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/ErrorResponse" },
+                },
+              },
+            },
+            409: {
+              description: "Category name already exists",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/ErrorResponse" },
+                },
+              },
+            },
+          },
+        },
+        delete: {
+          tags: ["Categories"],
+          summary: "Hapus kategori",
+          security: [{ bearerAuth: [] }],
+          parameters: [
+            {
+              in: "path",
+              name: "id",
+              required: true,
+              schema: { type: "integer" },
+              description: "Category id",
+            },
+          ],
+          responses: {
+            200: {
+              description: "Category deleted",
+              content: {
+                "application/json": {
+                  schema: {
+                    type: "object",
+                    properties: {
+                      message: { type: "string", example: "Category deleted." },
+                    },
+                  },
+                },
+              },
+            },
+            401: {
+              description: "Unauthorized",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/ErrorResponse" },
+                },
+              },
+            },
+            404: {
+              description: "Category not found",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/ErrorResponse" },
+                },
+              },
+            },
+            409: {
+              description: "Category is used by transactions",
               content: {
                 "application/json": {
                   schema: { $ref: "#/components/schemas/ErrorResponse" },

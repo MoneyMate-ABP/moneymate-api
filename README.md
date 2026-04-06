@@ -206,6 +206,9 @@ Catatan perilaku Google login:
 ### Categories
 
 - `GET /api/categories`
+- `POST /api/categories`
+- `PUT /api/categories/:id`
+- `DELETE /api/categories/:id`
 
 ### Budget Periods
 
