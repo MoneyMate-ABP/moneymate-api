@@ -227,6 +227,10 @@ Catatan perilaku Google login:
 - Database schema now uses versioned Knex migrations (tracked in `knex_migrations` table).
 - On server startup, `migrate:latest` is executed automatically.
 - On server startup, database will be auto-created first if it does not exist.
+- Seeder `002_dummy_user_budget_transactions.js` menambahkan data dummy:
+	- User: `dummy@test.com` (password: `password123`)
+	- Budget period: `Budget April 2026` (`2026-04-01` s/d `2026-04-30`, total `1000000`)
+	- Transaction tanggal `2026-04-01` s/d `2026-04-05`: `30000`, `50000`, `43000`, `63000`, `15000`
 - Useful commands:
 - `npm run migrate`
 - `npm run migrate:rollback`
