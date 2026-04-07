@@ -27,6 +27,7 @@ function parseCategoryId(value) {
 async function listCategories(req, res) {
   const categories = await db("categories")
     .select("id", "name", "type")
+    .where({ user_id: req.user.id })
     .orderBy("id", "asc");
 
   return res.json({
@@ -38,6 +39,7 @@ async function createCategory(req, res) {
   const payload = createCategorySchema.parse(req.body);
 
   const existingCategory = await db("categories")
+    .where({ user_id: req.user.id })
     .whereRaw("LOWER(name) = LOWER(?)", [payload.name])
     .first();
 
@@ -47,6 +49,7 @@ async function createCategory(req, res) {
 
   const insertResult = await db("categories")
     .insert({
+      user_id: req.user.id,
       name: payload.name,
       type: payload.type,
     })
@@ -68,7 +71,7 @@ async function updateCategory(req, res) {
   const payload = updateCategorySchema.parse(req.body);
 
   const existingCategory = await db("categories")
-    .where({ id: categoryId })
+    .where({ id: categoryId, user_id: req.user.id })
     .first();
 
   if (!existingCategory) {
@@ -77,6 +80,7 @@ async function updateCategory(req, res) {
 
   if (payload.name) {
     const duplicateName = await db("categories")
+      .where({ user_id: req.user.id })
       .whereRaw("LOWER(name) = LOWER(?)", [payload.name])
       .whereNot({ id: categoryId })
       .first();
@@ -102,7 +106,7 @@ async function deleteCategory(req, res) {
   const categoryId = parseCategoryId(req.params.id);
 
   const existingCategory = await db("categories")
-    .where({ id: categoryId })
+    .where({ id: categoryId, user_id: req.user.id })
     .first();
 
   if (!existingCategory) {

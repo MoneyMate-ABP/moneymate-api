@@ -6,7 +6,7 @@ Backend for MoneyMate Expense Tracker using Express.js, JWT, and SQL (PostgreSQL
 
 - JWT auth: register, login, logout (token revocation)
 - Google login via Firebase ID token
-- Default categories: Makanan, Transportasi, Hiburan, Lainnya
+- Default categories (per-user, auto-created on registration): Gaji, Makanan, Transportasi, Hiburan, Lainnya
 - Transactions: create, edit, delete, filter by date/type/category
 - Budget periods: multiple active periods supported
 - Realtime carry-over daily budget calculation
@@ -204,6 +204,8 @@ Catatan perilaku Google login:
 - `DELETE /api/transactions/:id`
 
 ### Categories
+
+*(Categories are now user-scoped; users only see and edit their own categories)*
 
 - `GET /api/categories`
 - `POST /api/categories`

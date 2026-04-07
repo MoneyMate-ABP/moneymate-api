@@ -36,16 +36,17 @@ function roundTo2(value) {
   return Math.round((Number(value) + Number.EPSILON) * 100) / 100;
 }
 
-async function ensureCategory(knex, name, type) {
-  let category = await knex("categories").where({ name }).first();
+async function ensureCategory(knex, userId, name, type) {
+  let category = await knex("categories").where({ user_id: userId, name }).first();
 
   if (!category) {
     await knex("categories").insert({
+      user_id: userId,
       name,
       type,
     });
 
-    category = await knex("categories").where({ name }).first();
+    category = await knex("categories").where({ user_id: userId, name }).first();
   }
 
   return category;
@@ -194,9 +195,10 @@ async function upsertDummyTransactions(
 }
 
 exports.seed = async function seed(knex) {
-  const expenseCategory = await ensureCategory(knex, "Makanan", "expense");
-  const incomeCategory = await ensureCategory(knex, "Gaji", "income");
   const user = await ensureDummyUser(knex);
+  const expenseCategory = await ensureCategory(knex, user.id, "Makanan", "expense");
+  const incomeCategory = await ensureCategory(knex, user.id, "Gaji", "income");
+  
   const budgetPeriod = await ensureDummyBudgetPeriod(
     knex,
     user.id,

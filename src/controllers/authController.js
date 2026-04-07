@@ -6,6 +6,17 @@ const { verifyFirebaseIdToken } = require("../services/firebaseAdmin");
 const { signToken } = require("../utils/jwt");
 const { extractInsertedId } = require("../utils/db");
 
+async function seedDefaultCategories(userId) {
+  const defaultCategories = [
+    { user_id: userId, name: "Gaji", type: "income" },
+    { user_id: userId, name: "Makanan", type: "expense" },
+    { user_id: userId, name: "Transportasi", type: "expense" },
+    { user_id: userId, name: "Hiburan", type: "expense" },
+    { user_id: userId, name: "Lainnya", type: "expense" },
+  ];
+  await db("categories").insert(defaultCategories);
+}
+
 const registerSchema = z.object({
   name: z.string().trim().min(1),
   email: z.string().email(),
@@ -70,6 +81,10 @@ async function register(req, res) {
     user = await db("users")
       .where({ email: payload.email.toLowerCase() })
       .first();
+  }
+
+  if (user) {
+    await seedDefaultCategories(user.id);
   }
 
   return res
@@ -155,6 +170,10 @@ async function googleLogin(req, res) {
 
     if (!user) {
       user = await db("users").where({ firebase_uid: firebaseUid }).first();
+    }
+
+    if (user) {
+      await seedDefaultCategories(user.id);
     }
 
     return res
