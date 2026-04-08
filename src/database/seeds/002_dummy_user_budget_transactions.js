@@ -16,6 +16,7 @@ const DUMMY_BUDGET = {
   totalBudget: 1000000,
   startDate: "2026-04-01",
   endDate: "2026-04-30",
+  excludedWeekdays: [0, 6],
 };
 
 const DUMMY_INCOME_TRANSACTION = {
@@ -89,8 +90,21 @@ async function ensureDummyUser(knex) {
 async function ensureDummyBudgetPeriod(knex, userId, categoryId) {
   const startDate = parseDate(DUMMY_BUDGET.startDate, "startDate");
   const endDate = parseDate(DUMMY_BUDGET.endDate, "endDate");
-  const workingDaysCount = getWorkingDaysCount(startDate, endDate);
+  const workingDaysCount = getWorkingDaysCount(
+    startDate,
+    endDate,
+    DUMMY_BUDGET.excludedWeekdays,
+  );
   const dailyBudgetBase = roundTo2(DUMMY_BUDGET.totalBudget / workingDaysCount);
+  const serializedExcludedWeekdays = JSON.stringify(
+    DUMMY_BUDGET.excludedWeekdays,
+  );
+
+  const existingDefaultPeriod = await knex("budget_periods")
+    .where({ user_id: userId, is_default: true })
+    .first();
+
+  const shouldSetAsDefault = !existingDefaultPeriod;
 
   let budgetPeriod = await knex("budget_periods")
     .where({
@@ -111,6 +125,8 @@ async function ensureDummyBudgetPeriod(knex, userId, categoryId) {
       end_date: toDateString(endDate),
       daily_budget_base: dailyBudgetBase,
       working_days_count: workingDaysCount,
+      excluded_weekdays: serializedExcludedWeekdays,
+      is_default: shouldSetAsDefault,
     });
 
     budgetPeriod = await knex("budget_periods")
@@ -130,6 +146,7 @@ async function ensureDummyBudgetPeriod(knex, userId, categoryId) {
     total_budget: DUMMY_BUDGET.totalBudget,
     daily_budget_base: dailyBudgetBase,
     working_days_count: workingDaysCount,
+    excluded_weekdays: serializedExcludedWeekdays,
   });
 
   return knex("budget_periods").where({ id: budgetPeriod.id }).first();
