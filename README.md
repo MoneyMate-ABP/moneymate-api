@@ -9,10 +9,13 @@ Backend for MoneyMate Expense Tracker using Express.js, JWT, and SQL (PostgreSQL
 - Default categories (per-user, auto-created on registration): Gaji, Makanan, Transportasi, Hiburan, Lainnya
 - Transactions: create, edit, delete, filter by date/type/category
 - Budget periods: multiple active periods supported
+- Budget period supports custom excluded days and one default period per user
+- Transaction can auto-use default budget period when `budget_period_id` is not sent
 - Realtime carry-over daily budget calculation
 - Dashboard summary with budget status for today
 - Daily 20:00 notification job baseline (cron)
 - Optional geolocation for transactions
+- Optional pagination (`page`, `limit`) on list endpoints for lazy loading / infinite scroll
 
 ## Tech
 
@@ -204,6 +207,11 @@ Catatan perilaku Google login:
 - `PUT /api/transactions/:id`
 - `DELETE /api/transactions/:id`
 
+Notes:
+
+- `GET /api/transactions` supports optional `page` and `limit` query params.
+- `POST /api/transactions`: jika `budget_period_id` tidak dikirim, backend otomatis menggunakan default budget period user (jika ada).
+
 ### Categories
 
 *(Categories are now user-scoped; users only see and edit their own categories)*
@@ -214,13 +222,24 @@ Catatan perilaku Google login:
 - `PUT /api/categories/:id`
 - `DELETE /api/categories/:id`
 
+Notes:
+
+- `GET /api/categories` supports optional `page` and `limit` query params.
+
 ### Budget Periods
 
 - `GET /api/budget-periods`
 - `POST /api/budget-periods`
 - `PUT /api/budget-periods/:id`
+- `POST /api/budget-periods/:id/set-default`
 - `DELETE /api/budget-periods/:id`
 - `GET /api/budget-periods/:id/daily-status?date=YYYY-MM-DD`
+
+Notes:
+
+- `GET /api/budget-periods` supports optional `page` and `limit` query params.
+- `excluded_weekdays` menggunakan angka hari: `0=Sunday ... 6=Saturday`.
+- Setiap user memiliki maksimal satu default budget period (`is_default=true`).
 
 ### Dashboard
 
@@ -244,4 +263,5 @@ Catatan perilaku Google login:
 - `npm run seed`
 - `npm run seed:make -- seed_name`
 - Daily status is calculated in realtime from transactions and budget period settings.
-- Weekend base budget is set to `0`; carry-over remains active.
+- Lazy load list/table data utamanya di frontend (infinite scroll / load more), sedangkan backend men-support dengan pagination (`page`, `limit`) agar data diambil bertahap.
+- Base budget is `0` on excluded weekdays (`excluded_weekdays`); carry-over remains active.

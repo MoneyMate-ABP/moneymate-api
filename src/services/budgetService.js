@@ -2,6 +2,7 @@ const db = require("../config/db");
 const {
   ensureDateWithinRange,
   getWorkingDaysCount,
+  isDayExcluded,
   isWeekend,
   listDatesInclusive,
   normalizeDateString,
@@ -16,6 +17,35 @@ function calculateDailyBudgetBase(totalBudget, workingDaysCount) {
   }
 
   return roundTo2(toNumber(totalBudget) / workingDaysCount);
+}
+
+function normalizeExcludedWeekdays(excludedWeekdays) {
+  if (!Array.isArray(excludedWeekdays)) {
+    return [0, 6];
+  }
+
+  const normalized = [
+    ...new Set(excludedWeekdays.map((day) => Number(day))),
+  ].filter((day) => Number.isInteger(day) && day >= 0 && day <= 6);
+
+  return normalized.sort((a, b) => a - b);
+}
+
+function parseExcludedWeekdays(value) {
+  if (Array.isArray(value)) {
+    return normalizeExcludedWeekdays(value);
+  }
+
+  if (typeof value === "string") {
+    try {
+      const parsed = JSON.parse(value);
+      return normalizeExcludedWeekdays(parsed);
+    } catch (_error) {
+      return [0, 6];
+    }
+  }
+
+  return [0, 6];
 }
 
 async function getBudgetPeriodById(userId, budgetPeriodId) {
@@ -59,6 +89,9 @@ async function getDailyStatus(budgetPeriod, targetDate) {
 
   const startDate = parseDate(budgetPeriod.start_date, "start_date");
   const days = listDatesInclusive(startDate, targetDate);
+  const excludedWeekdays = parseExcludedWeekdays(
+    budgetPeriod.excluded_weekdays,
+  );
   const spentMap = await getSpentMapByDate({
     userId: budgetPeriod.user_id,
     categoryId: budgetPeriod.category_id,
@@ -77,8 +110,8 @@ async function getDailyStatus(budgetPeriod, targetDate) {
 
   for (const day of days) {
     const dayString = toDateString(day);
-    const weekend = isWeekend(day);
-    const base = weekend ? 0 : dailyBase;
+    const excludedDay = isDayExcluded(day, excludedWeekdays);
+    const base = excludedDay ? 0 : dailyBase;
     const effectiveBudget = roundTo2(base + carryOver);
     const spent = roundTo2(spentMap.get(dayString) || 0);
 
@@ -99,6 +132,7 @@ async function getDailyStatus(budgetPeriod, targetDate) {
     effective_budget: effectiveBudgetForTarget,
     total_spent: spentForTarget,
     remaining: roundTo2(effectiveBudgetForTarget - spentForTarget),
+    is_excluded_day: isDayExcluded(targetDate, excludedWeekdays),
     is_weekend: isWeekend(targetDate),
   };
 }
@@ -108,4 +142,6 @@ module.exports = {
   getBudgetPeriodById,
   getDailyStatus,
   getWorkingDaysCount,
+  normalizeExcludedWeekdays,
+  parseExcludedWeekdays,
 };

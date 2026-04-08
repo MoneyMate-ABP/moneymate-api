@@ -1,6 +1,7 @@
 const { z } = require("zod");
 const db = require("../config/db");
 const { extractInsertedId } = require("../utils/db");
+const { buildPaginationMeta, parsePagination } = require("../utils/pagination");
 
 const categoryType = z.enum(["income", "expense", "both"]);
 
@@ -25,13 +26,38 @@ function parseCategoryId(value) {
 }
 
 async function listCategories(req, res) {
-  const categories = await db("categories")
+  const pagination = parsePagination(req.query);
+
+  const query = db("categories")
     .select("id", "name", "type")
     .where({ user_id: req.user.id })
     .orderBy("id", "asc");
 
+  if (pagination) {
+    query.limit(pagination.limit).offset(pagination.offset);
+  }
+
+  const categories = await query;
+
+  if (!pagination) {
+    return res.json({
+      data: categories,
+    });
+  }
+
+  const [{ total }] = await db("categories")
+    .where({ user_id: req.user.id })
+    .count({ total: "id" });
+
+  const meta = buildPaginationMeta({
+    page: pagination.page,
+    limit: pagination.limit,
+    total: Number(total),
+  });
+
   return res.json({
     data: categories,
+    meta,
   });
 }
 

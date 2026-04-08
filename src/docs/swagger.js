@@ -130,6 +130,7 @@ const options = {
               type: "array",
               items: { $ref: "#/components/schemas/Category" },
             },
+            meta: { $ref: "#/components/schemas/PaginationMeta" },
           },
           required: ["data"],
         },
@@ -212,7 +213,13 @@ const options = {
           type: "object",
           properties: {
             category_id: { type: "integer", example: 1 },
-            budget_period_id: { type: "integer", nullable: true, example: 2 },
+            budget_period_id: {
+              type: "integer",
+              nullable: true,
+              example: 2,
+              description:
+                "Opsional. Jika tidak dikirim, backend akan gunakan default budget period user (jika ada).",
+            },
             type: {
               type: "string",
               enum: ["income", "expense"],
@@ -250,6 +257,7 @@ const options = {
               type: "array",
               items: { $ref: "#/components/schemas/Transaction" },
             },
+            meta: { $ref: "#/components/schemas/PaginationMeta" },
           },
           required: ["data"],
         },
@@ -281,6 +289,18 @@ const options = {
               example: 68181.82,
             },
             working_days_count: { type: "integer", example: 22 },
+            excluded_weekdays: {
+              type: "array",
+              items: {
+                type: "integer",
+                minimum: 0,
+                maximum: 6,
+              },
+              example: [0, 6],
+              description:
+                "Hari yang dikecualikan dari perhitungan budget harian",
+            },
+            is_default: { type: "boolean", example: true },
             created_at: {
               type: "string",
               format: "date-time",
@@ -315,6 +335,23 @@ const options = {
               example: "2026-04-01",
             },
             end_date: { type: "string", format: "date", example: "2026-04-30" },
+            excluded_weekdays: {
+              type: "array",
+              items: {
+                type: "integer",
+                minimum: 0,
+                maximum: 6,
+              },
+              example: [0, 6],
+              description:
+                "Hari yang dikecualikan dari budget harian. 0 = Minggu, 6 = Sabtu",
+            },
+            is_default: {
+              type: "boolean",
+              example: true,
+              description:
+                "Set true untuk menjadikan period ini sebagai default",
+            },
           },
           required: ["name", "total_budget", "start_date", "end_date"],
         },
@@ -330,6 +367,16 @@ const options = {
               example: "2026-04-01",
             },
             end_date: { type: "string", format: "date", example: "2026-04-30" },
+            excluded_weekdays: {
+              type: "array",
+              items: {
+                type: "integer",
+                minimum: 0,
+                maximum: 6,
+              },
+              example: [0, 6],
+            },
+            is_default: { type: "boolean", example: false },
           },
         },
         BudgetPeriodListResponse: {
@@ -339,6 +386,7 @@ const options = {
               type: "array",
               items: { $ref: "#/components/schemas/BudgetPeriod" },
             },
+            meta: { $ref: "#/components/schemas/PaginationMeta" },
           },
           required: ["data"],
         },
@@ -363,6 +411,7 @@ const options = {
             },
             total_spent: { type: "number", format: "float", example: 50000 },
             remaining: { type: "number", format: "float", example: 23181.82 },
+            is_excluded_day: { type: "boolean", example: false },
             is_weekend: { type: "boolean", example: false },
           },
           required: [
@@ -372,7 +421,27 @@ const options = {
             "effective_budget",
             "total_spent",
             "remaining",
+            "is_excluded_day",
             "is_weekend",
+          ],
+        },
+        PaginationMeta: {
+          type: "object",
+          properties: {
+            page: { type: "integer", example: 1 },
+            limit: { type: "integer", example: 20 },
+            total: { type: "integer", example: 120 },
+            total_pages: { type: "integer", example: 6 },
+            has_next: { type: "boolean", example: true },
+            has_prev: { type: "boolean", example: false },
+          },
+          required: [
+            "page",
+            "limit",
+            "total",
+            "total_pages",
+            "has_next",
+            "has_prev",
           ],
         },
         DailyStatusResponse: {
@@ -634,6 +703,22 @@ const options = {
           tags: ["Categories"],
           summary: "List kategori",
           security: [{ bearerAuth: [] }],
+          parameters: [
+            {
+              in: "query",
+              name: "page",
+              required: false,
+              schema: { type: "integer", minimum: 1 },
+              description: "Page number untuk lazy load (opsional)",
+            },
+            {
+              in: "query",
+              name: "limit",
+              required: false,
+              schema: { type: "integer", minimum: 1 },
+              description: "Jumlah item per page untuk lazy load (opsional)",
+            },
+          ],
           responses: {
             200: {
               description: "Category list",
@@ -882,6 +967,20 @@ const options = {
               schema: { type: "integer" },
               description: "Filter category id",
             },
+            {
+              in: "query",
+              name: "page",
+              required: false,
+              schema: { type: "integer", minimum: 1 },
+              description: "Page number untuk lazy load (opsional)",
+            },
+            {
+              in: "query",
+              name: "limit",
+              required: false,
+              schema: { type: "integer", minimum: 1 },
+              description: "Jumlah item per page untuk lazy load (opsional)",
+            },
           ],
           responses: {
             200: {
@@ -1102,6 +1201,22 @@ const options = {
           tags: ["Budget Periods"],
           summary: "List budget periods",
           security: [{ bearerAuth: [] }],
+          parameters: [
+            {
+              in: "query",
+              name: "page",
+              required: false,
+              schema: { type: "integer", minimum: 1 },
+              description: "Page number untuk lazy load (opsional)",
+            },
+            {
+              in: "query",
+              name: "limit",
+              required: false,
+              schema: { type: "integer", minimum: 1 },
+              description: "Jumlah item per page untuk lazy load (opsional)",
+            },
+          ],
           responses: {
             200: {
               description: "Budget period list",
@@ -1247,6 +1362,50 @@ const options = {
                       },
                     },
                     required: ["message"],
+                  },
+                },
+              },
+            },
+            401: {
+              description: "Unauthorized",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/ErrorResponse" },
+                },
+              },
+            },
+            404: {
+              description: "Budget period not found",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/ErrorResponse" },
+                },
+              },
+            },
+          },
+        },
+      },
+      "/api/budget-periods/{id}/set-default": {
+        post: {
+          tags: ["Budget Periods"],
+          summary: "Set default budget period",
+          security: [{ bearerAuth: [] }],
+          parameters: [
+            {
+              in: "path",
+              name: "id",
+              required: true,
+              schema: { type: "integer" },
+              description: "Budget period id",
+            },
+          ],
+          responses: {
+            200: {
+              description: "Default budget period updated",
+              content: {
+                "application/json": {
+                  schema: {
+                    $ref: "#/components/schemas/BudgetPeriodMutationResponse",
                   },
                 },
               },

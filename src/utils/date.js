@@ -43,6 +43,10 @@ function isWeekend(date) {
   return day === 0 || day === 6;
 }
 
+function isDayExcluded(date, excludedWeekdays = [0, 6]) {
+  return excludedWeekdays.includes(date.getDay());
+}
+
 function listDatesInclusive(startDate, endDate) {
   const dates = [];
   let cursor = startOfDay(startDate);
@@ -68,14 +72,15 @@ function ensureDateWithinRange(date, startDate, endDate, fieldName = "date") {
   }
 }
 
-function getWorkingDaysCount(startDate, endDate) {
+function getWorkingDaysCount(startDate, endDate, excludedWeekdays = [0, 6]) {
   const dates = listDatesInclusive(startDate, endDate);
-  return dates.filter((date) => !isWeekend(date)).length;
+  return dates.filter((date) => !isDayExcluded(date, excludedWeekdays)).length;
 }
 
 module.exports = {
   ensureDateWithinRange,
   getWorkingDaysCount,
+  isDayExcluded,
   isWeekend,
   listDatesInclusive,
   normalizeDateString,

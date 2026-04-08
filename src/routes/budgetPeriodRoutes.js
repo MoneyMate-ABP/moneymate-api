@@ -20,6 +20,11 @@ router.put(
   authenticate,
   asyncHandler(budgetPeriodController.updateBudgetPeriod),
 );
+router.post(
+  "/:id/set-default",
+  authenticate,
+  asyncHandler(budgetPeriodController.setDefaultBudgetPeriod),
+);
 router.delete(
   "/:id",
   authenticate,
