@@ -35,6 +35,21 @@ async function listCategories(req, res) {
   });
 }
 
+async function getCategoryById(req, res) {
+  const categoryId = parseCategoryId(req.params.id);
+
+  const category = await db("categories")
+    .select("id", "name", "type")
+    .where({ id: categoryId, user_id: req.user.id })
+    .first();
+
+  if (!category) {
+    return res.status(404).json({ message: "Category not found." });
+  }
+
+  return res.json({ data: category });
+}
+
 async function createCategory(req, res) {
   const payload = createCategorySchema.parse(req.body);
 
@@ -131,6 +146,7 @@ async function deleteCategory(req, res) {
 module.exports = {
   createCategory,
   deleteCategory,
+  getCategoryById,
   listCategories,
   updateCategory,
 };

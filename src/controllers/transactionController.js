@@ -111,6 +111,46 @@ async function listTransactions(req, res) {
   return res.json({ data });
 }
 
+async function getTransactionById(req, res) {
+  const transactionId = Number(req.params.id);
+
+  const row = await db("transactions as t")
+    .leftJoin("categories as c", "t.category_id", "c.id")
+    .leftJoin("budget_periods as bp", "t.budget_period_id", "bp.id")
+    .select(
+      "t.id",
+      "t.user_id",
+      "t.category_id",
+      "t.budget_period_id",
+      "t.type",
+      "t.amount",
+      "t.note",
+      "t.date",
+      "t.latitude",
+      "t.longitude",
+      "t.created_at",
+      "c.name as category_name",
+      "bp.name as budget_period_name",
+    )
+    .where("t.id", transactionId)
+    .andWhere("t.user_id", req.user.id)
+    .first();
+
+  if (!row) {
+    return res.status(404).json({ message: "Transaction not found." });
+  }
+
+  const data = {
+    ...row,
+    amount: toNumber(row.amount),
+    latitude: row.latitude === null ? null : toNumber(row.latitude),
+    longitude: row.longitude === null ? null : toNumber(row.longitude),
+    date: normalizeDateString(row.date),
+  };
+
+  return res.json({ data });
+}
+
 async function createTransaction(req, res) {
   const payload = createTransactionSchema.parse(req.body);
   const transactionDate = parseDate(payload.date, "date");
@@ -204,6 +244,7 @@ async function deleteTransaction(req, res) {
 module.exports = {
   createTransaction,
   deleteTransaction,
+  getTransactionById,
   listTransactions,
   updateTransaction,
 };

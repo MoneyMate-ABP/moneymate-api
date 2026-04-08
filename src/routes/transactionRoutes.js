@@ -10,6 +10,11 @@ router.get(
   authenticate,
   asyncHandler(transactionController.listTransactions),
 );
+router.get(
+  "/:id",
+  authenticate,
+  asyncHandler(transactionController.getTransactionById),
+);
 router.post(
   "/",
   authenticate,

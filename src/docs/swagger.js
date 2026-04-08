@@ -698,6 +698,52 @@ const options = {
         },
       },
       "/api/categories/{id}": {
+        get: {
+          tags: ["Categories"],
+          summary: "Detail kategori",
+          security: [{ bearerAuth: [] }],
+          parameters: [
+            {
+              in: "path",
+              name: "id",
+              required: true,
+              schema: { type: "integer" },
+              description: "Category id",
+            },
+          ],
+          responses: {
+            200: {
+              description: "Category detail",
+              content: {
+                "application/json": {
+                  schema: {
+                    type: "object",
+                    properties: {
+                      data: { $ref: "#/components/schemas/Category" },
+                    },
+                    required: ["data"],
+                  },
+                },
+              },
+            },
+            401: {
+              description: "Unauthorized",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/ErrorResponse" },
+                },
+              },
+            },
+            404: {
+              description: "Category not found",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/ErrorResponse" },
+                },
+              },
+            },
+          },
+        },
         put: {
           tags: ["Categories"],
           summary: "Update kategori",
@@ -903,6 +949,52 @@ const options = {
         },
       },
       "/api/transactions/{id}": {
+        get: {
+          tags: ["Transactions"],
+          summary: "Detail transaksi",
+          security: [{ bearerAuth: [] }],
+          parameters: [
+            {
+              in: "path",
+              name: "id",
+              required: true,
+              schema: { type: "integer" },
+              description: "Transaction id",
+            },
+          ],
+          responses: {
+            200: {
+              description: "Transaction detail",
+              content: {
+                "application/json": {
+                  schema: {
+                    type: "object",
+                    properties: {
+                      data: { $ref: "#/components/schemas/Transaction" },
+                    },
+                    required: ["data"],
+                  },
+                },
+              },
+            },
+            401: {
+              description: "Unauthorized",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/ErrorResponse" },
+                },
+              },
+            },
+            404: {
+              description: "Transaction not found",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/ErrorResponse" },
+                },
+              },
+            },
+          },
+        },
         put: {
           tags: ["Transactions"],
           summary: "Update transaksi",

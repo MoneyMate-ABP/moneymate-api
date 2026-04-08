@@ -199,6 +199,7 @@ Catatan perilaku Google login:
 ### Transactions
 
 - `GET /api/transactions?date=&type=&category=`
+- `GET /api/transactions/:id`
 - `POST /api/transactions`
 - `PUT /api/transactions/:id`
 - `DELETE /api/transactions/:id`
@@ -208,6 +209,7 @@ Catatan perilaku Google login:
 *(Categories are now user-scoped; users only see and edit their own categories)*
 
 - `GET /api/categories`
+- `GET /api/categories/:id`
 - `POST /api/categories`
 - `PUT /api/categories/:id`
 - `DELETE /api/categories/:id`
