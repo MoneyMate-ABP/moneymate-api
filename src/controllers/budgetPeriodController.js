@@ -170,8 +170,25 @@ async function createBudgetPeriod(req, res) {
     workingDaysCount,
   );
 
+  const oneMinuteAgo = new Date(Date.now() - 60 * 1000);
+  const duplicate = await db("budget_periods")
+    .where({
+      user_id: req.user.id,
+      name: payload.name,
+      total_budget: payload.total_budget,
+      start_date: toDateString(startDate),
+      end_date: toDateString(endDate),
+    })
+    .where("created_at", ">", oneMinuteAgo)
+    .first();
+
+  if (duplicate) {
+    return res.status(409).json({ message: "Duplicate budget period detected. Please wait a moment before submitting identical ones." });
+  }
+
   const existingDefault = await hasDefaultBudgetPeriod(req.user.id);
   const shouldSetDefault = payload.is_default || !existingDefault;
+
 
   const insertResult = await db.transaction(async (trx) => {
     if (shouldSetDefault) {

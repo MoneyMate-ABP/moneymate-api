@@ -17,6 +17,14 @@ Backend for MoneyMate Expense Tracker using Express.js, JWT, and SQL (PostgreSQL
 - Optional geolocation for transactions
 - Optional pagination (`page`, `limit`) on list endpoints for lazy loading / infinite scroll
 
+## Security
+
+- **Rate Limiting**:
+  - Global: Burst limit of `60 req / 1 min` and sustain limit of `500 req / 15 min`.
+  - Auth: Strict limit of `7 req / 15 min` on login and register endpoints to prevent brute-force attacks.
+- **Duplicate Prevention**: 60-second duplicate blocking on `POST /api/transactions` and `POST /api/budget-periods` to avoid accidental double-clicks.
+- **Payload Limits**: Max JSON payload size is restricted to `10kb`.
+- **HPP**: Protection against HTTP Parameter Pollution included.
 ## Tech
 
 - Express.js

@@ -208,6 +208,22 @@ async function createTransaction(req, res) {
   await ensureCategoryExists(payload.category_id);
   await ensureBudgetPeriodForUser(req.user.id, resolvedBudgetPeriodId);
 
+  const oneMinuteAgo = new Date(Date.now() - 60 * 1000);
+  const duplicate = await db("transactions")
+    .where({
+      user_id: req.user.id,
+      category_id: payload.category_id,
+      type: payload.type,
+      amount: payload.amount,
+      date: toDateString(transactionDate),
+    })
+    .where("created_at", ">", oneMinuteAgo)
+    .first();
+
+  if (duplicate) {
+    return res.status(409).json({ message: "Duplicate transaction detected. Please wait a moment before submitting identical transactions." });
+  }
+
   const insertResult = await db("transactions")
     .insert({
       user_id: req.user.id,

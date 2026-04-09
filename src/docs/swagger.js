@@ -1044,6 +1044,14 @@ const options = {
                 },
               },
             },
+            409: {
+              description: "Duplicate transaction (too fast)",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/ErrorResponse" },
+                },
+              },
+            },
           },
         },
       },
@@ -1273,6 +1281,14 @@ const options = {
             },
             404: {
               description: "Category not found",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/ErrorResponse" },
+                },
+              },
+            },
+            409: {
+              description: "Duplicate budget period (too fast)",
               content: {
                 "application/json": {
                   schema: { $ref: "#/components/schemas/ErrorResponse" },
