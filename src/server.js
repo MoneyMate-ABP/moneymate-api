@@ -3,12 +3,14 @@ const db = require("./config/db");
 const { ensureDatabaseExists } = require("./config/ensureDatabaseExists");
 const env = require("./config/env");
 const { migrateDatabase } = require("./config/migrateDatabase");
-const { startDailyNotificationJob } = require("./jobs/dailyNotificationJob");
+const {
+  startDailyBudgetNotificationJob,
+} = require("./jobs/dailyBudgetNotification");
 
 async function startServer() {
   await ensureDatabaseExists();
   await migrateDatabase();
-  startDailyNotificationJob();
+  startDailyBudgetNotificationJob();
 
   app.listen(env.port, () => {
     console.log(`MoneyMate API running on port ${env.port}`);

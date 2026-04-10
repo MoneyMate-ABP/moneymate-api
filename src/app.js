@@ -10,6 +10,7 @@ const authRoutes = require("./routes/authRoutes");
 const budgetPeriodRoutes = require("./routes/budgetPeriodRoutes");
 const categoryRoutes = require("./routes/categoryRoutes");
 const dashboardRoutes = require("./routes/dashboardRoutes");
+const notificationRoutes = require("./routes/notificationRoutes");
 const transactionRoutes = require("./routes/transactionRoutes");
 const { errorHandler, notFoundHandler } = require("./middleware/errorHandler");
 const swaggerSpec = require("./docs/swagger");
@@ -51,6 +52,7 @@ app.use("/api/categories", categoryRoutes);
 app.use("/api/transactions", transactionRoutes);
 app.use("/api/budget-periods", budgetPeriodRoutes);
 app.use("/api/dashboard", dashboardRoutes);
+app.use("/api/notifications", notificationRoutes);
 
 app.use(notFoundHandler);
 app.use(errorHandler);
