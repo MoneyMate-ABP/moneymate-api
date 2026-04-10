@@ -26,6 +26,7 @@ const options = {
       { name: "Transactions", description: "Transaction endpoints" },
       { name: "Budget Periods", description: "Budget period endpoints" },
       { name: "Dashboard", description: "Dashboard summary endpoint" },
+      { name: "Notifications", description: "Push notification endpoints" },
     ],
     components: {
       securitySchemes: {
@@ -516,6 +517,80 @@ const options = {
             },
           },
           required: ["data"],
+        },
+        PushSubscribeRequest: {
+          type: "object",
+          properties: {
+            subscription: {
+              type: "object",
+              properties: {
+                endpoint: {
+                  type: "string",
+                  example:
+                    "https://fcm.googleapis.com/fcm/send/example-endpoint",
+                },
+                keys: {
+                  type: "object",
+                  properties: {
+                    p256dh: { type: "string", example: "BInExampleP256dhKey" },
+                    auth: { type: "string", example: "ExampleAuthKey" },
+                  },
+                  required: ["p256dh", "auth"],
+                },
+              },
+              required: ["endpoint", "keys"],
+            },
+          },
+          required: ["subscription"],
+        },
+        NotificationHistoryItem: {
+          type: "object",
+          properties: {
+            id: { type: "integer", example: 1 },
+            title: { type: "string", example: "Budget hari ini siap!" },
+            body: {
+              type: "string",
+              example:
+                "Budget efektif kamu hari ini: Rp 63.500 (surplus Rp 3.500 dari kemarin)",
+            },
+            budget_period_name: {
+              type: "string",
+              nullable: true,
+              example: "Budget Maret-April",
+            },
+            effective_budget: {
+              type: "number",
+              format: "float",
+              example: 63500,
+            },
+            carry_over: { type: "number", format: "float", example: 3500 },
+            is_read: { type: "boolean", example: false },
+            sent_at: {
+              type: "string",
+              format: "date-time",
+              example: "2026-04-10T01:00:00.000Z",
+            },
+          },
+          required: [
+            "id",
+            "title",
+            "body",
+            "effective_budget",
+            "carry_over",
+            "is_read",
+            "sent_at",
+          ],
+        },
+        NotificationHistoryResponse: {
+          type: "object",
+          properties: {
+            data: {
+              type: "array",
+              items: { $ref: "#/components/schemas/NotificationHistoryItem" },
+            },
+            unread_count: { type: "integer", example: 2 },
+          },
+          required: ["data", "unread_count"],
         },
       },
     },
@@ -1511,6 +1586,255 @@ const options = {
             },
             401: {
               description: "Unauthorized",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/ErrorResponse" },
+                },
+              },
+            },
+          },
+        },
+      },
+      "/api/notifications/vapid-key": {
+        get: {
+          tags: ["Notifications"],
+          summary: "Get VAPID public key",
+          responses: {
+            200: {
+              description: "VAPID public key",
+              content: {
+                "application/json": {
+                  schema: {
+                    type: "object",
+                    properties: {
+                      publicKey: {
+                        type: "string",
+                        example: "BOrExampleVapidPublicKey",
+                      },
+                    },
+                    required: ["publicKey"],
+                  },
+                },
+              },
+            },
+            503: {
+              description: "VAPID key not configured",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/ErrorResponse" },
+                },
+              },
+            },
+          },
+        },
+      },
+      "/api/notifications/subscribe": {
+        post: {
+          tags: ["Notifications"],
+          summary: "Save push subscription",
+          security: [{ bearerAuth: [] }],
+          requestBody: {
+            required: true,
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/PushSubscribeRequest" },
+              },
+            },
+          },
+          responses: {
+            201: {
+              description: "Push subscription saved",
+              content: {
+                "application/json": {
+                  schema: {
+                    type: "object",
+                    properties: {
+                      message: {
+                        type: "string",
+                        example: "Push subscription saved.",
+                      },
+                    },
+                    required: ["message"],
+                  },
+                },
+              },
+            },
+            401: {
+              description: "Unauthorized",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/ErrorResponse" },
+                },
+              },
+            },
+          },
+        },
+      },
+      "/api/notifications/unsubscribe": {
+        delete: {
+          tags: ["Notifications"],
+          summary: "Remove push subscription",
+          security: [{ bearerAuth: [] }],
+          requestBody: {
+            required: true,
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    endpoint: {
+                      type: "string",
+                      example:
+                        "https://fcm.googleapis.com/fcm/send/example-endpoint",
+                    },
+                  },
+                  required: ["endpoint"],
+                },
+              },
+            },
+          },
+          responses: {
+            200: {
+              description: "Push subscription removed",
+              content: {
+                "application/json": {
+                  schema: {
+                    type: "object",
+                    properties: {
+                      message: {
+                        type: "string",
+                        example: "Push subscription removed.",
+                      },
+                    },
+                    required: ["message"],
+                  },
+                },
+              },
+            },
+            401: {
+              description: "Unauthorized",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/ErrorResponse" },
+                },
+              },
+            },
+            404: {
+              description: "Push subscription not found",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/ErrorResponse" },
+                },
+              },
+            },
+          },
+        },
+      },
+      "/api/notifications/history": {
+        get: {
+          tags: ["Notifications"],
+          summary: "Get latest notification history",
+          description:
+            "Returns maximum 5 latest history records for current user.",
+          security: [{ bearerAuth: [] }],
+          responses: {
+            200: {
+              description: "Notification history",
+              content: {
+                "application/json": {
+                  schema: {
+                    $ref: "#/components/schemas/NotificationHistoryResponse",
+                  },
+                },
+              },
+            },
+            401: {
+              description: "Unauthorized",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/ErrorResponse" },
+                },
+              },
+            },
+          },
+        },
+      },
+      "/api/notifications/history/read-all": {
+        patch: {
+          tags: ["Notifications"],
+          summary: "Mark all notification history as read",
+          security: [{ bearerAuth: [] }],
+          responses: {
+            200: {
+              description: "All notifications marked as read",
+              content: {
+                "application/json": {
+                  schema: {
+                    type: "object",
+                    properties: {
+                      message: {
+                        type: "string",
+                        example: "All notifications marked as read.",
+                      },
+                    },
+                    required: ["message"],
+                  },
+                },
+              },
+            },
+            401: {
+              description: "Unauthorized",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/ErrorResponse" },
+                },
+              },
+            },
+          },
+        },
+      },
+      "/api/notifications/history/{id}/read": {
+        patch: {
+          tags: ["Notifications"],
+          summary: "Mark one notification history item as read",
+          security: [{ bearerAuth: [] }],
+          parameters: [
+            {
+              in: "path",
+              name: "id",
+              required: true,
+              schema: { type: "integer" },
+              description: "Notification history id",
+            },
+          ],
+          responses: {
+            200: {
+              description: "Notification marked as read",
+              content: {
+                "application/json": {
+                  schema: {
+                    type: "object",
+                    properties: {
+                      message: {
+                        type: "string",
+                        example: "Notification marked as read.",
+                      },
+                    },
+                    required: ["message"],
+                  },
+                },
+              },
+            },
+            401: {
+              description: "Unauthorized",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/ErrorResponse" },
+                },
+              },
+            },
+            404: {
+              description: "Notification history not found",
               content: {
                 "application/json": {
                   schema: { $ref: "#/components/schemas/ErrorResponse" },

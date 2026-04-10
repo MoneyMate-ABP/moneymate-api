@@ -13,7 +13,9 @@ Backend for MoneyMate Expense Tracker using Express.js, JWT, and SQL (PostgreSQL
 - Transaction can auto-use default budget period when `budget_period_id` is not sent
 - Realtime carry-over daily budget calculation
 - Dashboard summary with budget status for today
-- Daily 20:00 notification job baseline (cron)
+- Daily 08:00 web push budget reminder (cron)
+- Push subscription endpoints (subscribe, unsubscribe, public VAPID key)
+- Notification history (last 5, unread count, mark read, mark all read)
 - Optional geolocation for transactions
 - Optional pagination (`page`, `limit`) on list endpoints for lazy loading / infinite scroll
 
@@ -54,24 +56,30 @@ cp .env.example .env
 - `FIREBASE_CLIENT_EMAIL`
 - `FIREBASE_PRIVATE_KEY` (gunakan escaped new line: `\\n`)
 
-5. Database creation:
+5. (Wajib untuk Web Push) isi konfigurasi VAPID di `.env`:
+
+- `VAPID_PUBLIC_KEY`
+- `VAPID_PRIVATE_KEY`
+- `VAPID_MAILTO` (format: `mailto:you@example.com`)
+
+6. Database creation:
 
 - If the DB does not exist yet, server startup will attempt to auto-create it (PostgreSQL/MySQL).
 - The DB user in `.env` must have permission to create database.
 
-6. Jalankan migration:
+7. Jalankan migration:
 
 ```bash
 npm run migrate
 ```
 
-7. Jalankan seed default data:
+8. Jalankan seed default data:
 
 ```bash
 npm run seed
 ```
 
-8. Run API in dev mode:
+9. Run API in dev mode:
 
 ```bash
 npm run dev
@@ -253,6 +261,21 @@ Notes:
 
 - `GET /api/dashboard`
 
+### Notifications
+
+- `GET /api/notifications/vapid-key`
+- `POST /api/notifications/subscribe`
+- `DELETE /api/notifications/unsubscribe`
+- `GET /api/notifications/history`
+- `PATCH /api/notifications/history/:id/read`
+- `PATCH /api/notifications/history/read-all`
+
+Notes:
+
+- Riwayat notifikasi hanya untuk user yang sedang login (JWT scope per user).
+- `GET /api/notifications/history` mengembalikan maksimal 5 data terbaru + `unread_count`.
+- Saat cron berjalan, histori tetap disimpan walaupun push ke device gagal.
+
 ## Notes
 
 - Database schema now uses versioned Knex migrations (tracked in `knex_migrations` table).
@@ -273,3 +296,4 @@ Notes:
 - Daily status is calculated in realtime from transactions and budget period settings.
 - Lazy load list/table data utamanya di frontend (infinite scroll / load more), sedangkan backend men-support dengan pagination (`page`, `limit`) agar data diambil bertahap.
 - Base budget is `0` on excluded weekdays (`excluded_weekdays`); carry-over remains active.
+- Job notifikasi berjalan setiap hari jam `08:00` (timezone mengikuti server).
