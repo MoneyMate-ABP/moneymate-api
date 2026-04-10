@@ -29,7 +29,7 @@ app.use(helmet());
 app.use(cors(corsOptions));
 app.use(express.json({ limit: "10kb" }));
 app.use(hpp());
-app.use(globalLimiter);
+// app.use(globalLimiter);
 app.use(morgan("dev"));
 
 app.get("/health", (req, res) => {
