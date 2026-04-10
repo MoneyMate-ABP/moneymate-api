@@ -8,6 +8,7 @@ const {
 } = require("../utils/date");
 const { toNumber } = require("../utils/number");
 const { buildPaginationMeta, parsePagination } = require("../utils/pagination");
+const { analyzeReceiptWithGemini } = require("../services/receiptAiService");
 
 const transactionType = z.enum(["income", "expense"]);
 
@@ -307,10 +308,34 @@ async function deleteTransaction(req, res) {
   return res.json({ message: "Transaction deleted." });
 }
 
+async function scanReceipt(req, res) {
+  if (!req.file || !req.file.buffer) {
+    return res.status(400).json({ message: "Receipt file is required." });
+  }
+
+  const categories = await db("categories")
+    .select("id", "name", "type")
+    .where({ user_id: req.user.id })
+    .orderBy("name", "asc");
+
+  const data = await analyzeReceiptWithGemini({
+    fileBuffer: req.file.buffer,
+    mimeType: req.file.mimetype,
+    fileName: req.file.originalname,
+    categories,
+  });
+
+  return res.json({
+    message: "Receipt analyzed.",
+    data,
+  });
+}
+
 module.exports = {
   createTransaction,
   deleteTransaction,
   getTransactionById,
   listTransactions,
+  scanReceipt,
   updateTransaction,
 };

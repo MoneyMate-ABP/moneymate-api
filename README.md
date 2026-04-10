@@ -16,6 +16,7 @@ Backend for MoneyMate Expense Tracker using Express.js, JWT, and SQL (PostgreSQL
 - Daily 08:00 web push budget reminder (cron)
 - Push subscription endpoints (subscribe, unsubscribe, public VAPID key)
 - Notification history (last 5, unread count, mark read, mark all read)
+- AI receipt scan (Gemini) for physical/digital receipts with editable transaction draft
 - Optional geolocation for transactions
 - Optional pagination (`page`, `limit`) on list endpoints for lazy loading / infinite scroll
 
@@ -62,24 +63,29 @@ cp .env.example .env
 - `VAPID_PRIVATE_KEY`
 - `VAPID_MAILTO` (format: `mailto:you@example.com`)
 
-6. Database creation:
+6. (Opsional, untuk AI scan struk) isi konfigurasi Gemini di `.env`:
+
+- `GEMINI_API_KEY`
+- `GEMINI_MODEL` (default: `gemini-2.5-flash`)
+
+7. Database creation:
 
 - If the DB does not exist yet, server startup will attempt to auto-create it (PostgreSQL/MySQL).
 - The DB user in `.env` must have permission to create database.
 
-7. Jalankan migration:
+8. Jalankan migration:
 
 ```bash
 npm run migrate
 ```
 
-8. Jalankan seed default data:
+9. Jalankan seed default data:
 
 ```bash
 npm run seed
 ```
 
-9. Run API in dev mode:
+10. Run API in dev mode:
 
 ```bash
 npm run dev
@@ -101,6 +107,7 @@ cp .env.docker.example .env.docker
 - `MYSQL_ROOT_PASSWORD`
 - `DB_PASSWORD` dan `MYSQL_PASSWORD`
 - `FIREBASE_PROJECT_ID`, `FIREBASE_CLIENT_EMAIL`, `FIREBASE_PRIVATE_KEY` (wajib jika menggunakan `POST /api/auth/google`)
+- `GEMINI_API_KEY` (opsional jika menggunakan `POST /api/transactions/receipt-scan`)
 
 3. Build dan jalankan service API + MySQL:
 
@@ -220,6 +227,7 @@ Catatan perilaku Google login:
 - `GET /api/transactions?date=&type=&category=`
 - `GET /api/transactions/:id`
 - `POST /api/transactions`
+- `POST /api/transactions/receipt-scan`
 - `PUT /api/transactions/:id`
 - `DELETE /api/transactions/:id`
 
@@ -227,6 +235,7 @@ Notes:
 
 - `GET /api/transactions` supports optional `page` and `limit` query params.
 - `POST /api/transactions`: jika `budget_period_id` tidak dikirim, backend otomatis menggunakan default budget period user (jika ada).
+- `POST /api/transactions/receipt-scan`: upload file struk (`receipt`) dengan format `JPG/PNG/WEBP/PDF` (maks 5MB), backend mengembalikan draft transaksi yang bisa diedit sebelum disimpan.
 
 ### Categories
 

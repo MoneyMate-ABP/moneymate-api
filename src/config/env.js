@@ -7,6 +7,8 @@ const env = {
   port: Number(process.env.PORT || 3000),
   jwtSecret: process.env.JWT_SECRET || "replace-me-in-production",
   jwtExpiresIn: process.env.JWT_EXPIRES_IN || "7d",
+  geminiApiKey: process.env.GEMINI_API_KEY,
+  geminiModel: process.env.GEMINI_MODEL || "gemini-2.5-flash",
   vapidPublicKey: process.env.VAPID_PUBLIC_KEY,
   vapidPrivateKey: process.env.VAPID_PRIVATE_KEY,
   vapidMailto: process.env.VAPID_MAILTO,

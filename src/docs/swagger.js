@@ -270,6 +270,67 @@ const options = {
           },
           required: ["message"],
         },
+        ReceiptScanData: {
+          type: "object",
+          properties: {
+            type: {
+              type: "string",
+              enum: ["income", "expense"],
+              example: "expense",
+            },
+            amount: {
+              type: "number",
+              format: "float",
+              nullable: true,
+              example: 50000,
+            },
+            date: {
+              type: "string",
+              format: "date",
+              nullable: true,
+              example: "2026-04-10",
+            },
+            note: {
+              type: "string",
+              nullable: true,
+              example: "Belanja bulanan supermarket",
+            },
+            suggested_category: {
+              type: "string",
+              nullable: true,
+              example: "Makanan",
+            },
+            merchant_name: {
+              type: "string",
+              nullable: true,
+              example: "Super Indo",
+            },
+            confidence: {
+              type: "number",
+              format: "float",
+              example: 0.92,
+            },
+            source_file_name: {
+              type: "string",
+              nullable: true,
+              example: "struk-supermarket.jpg",
+            },
+            source_mime_type: {
+              type: "string",
+              nullable: true,
+              example: "image/jpeg",
+            },
+          },
+          required: ["type", "confidence"],
+        },
+        ReceiptScanResponse: {
+          type: "object",
+          properties: {
+            message: { type: "string", example: "Receipt analyzed." },
+            data: { $ref: "#/components/schemas/ReceiptScanData" },
+          },
+          required: ["message", "data"],
+        },
         BudgetPeriod: {
           type: "object",
           properties: {
@@ -1270,6 +1331,75 @@ const options = {
             },
             404: {
               description: "Transaction not found",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/ErrorResponse" },
+                },
+              },
+            },
+          },
+        },
+      },
+      "/api/transactions/receipt-scan": {
+        post: {
+          tags: ["Transactions"],
+          summary: "Scan struk dengan AI",
+          description:
+            "Upload file struk (JPG/PNG/WEBP/PDF), backend akan ekstrak draft transaksi dengan Gemini.",
+          security: [{ bearerAuth: [] }],
+          requestBody: {
+            required: true,
+            content: {
+              "multipart/form-data": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    receipt: {
+                      type: "string",
+                      format: "binary",
+                      description: "File struk (maks 5MB)",
+                    },
+                  },
+                  required: ["receipt"],
+                },
+              },
+            },
+          },
+          responses: {
+            200: {
+              description: "Receipt analyzed",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/ReceiptScanResponse" },
+                },
+              },
+            },
+            400: {
+              description: "Invalid receipt upload",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/ErrorResponse" },
+                },
+              },
+            },
+            401: {
+              description: "Unauthorized",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/ErrorResponse" },
+                },
+              },
+            },
+            422: {
+              description: "Receipt could not be parsed",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/ErrorResponse" },
+                },
+              },
+            },
+            503: {
+              description: "AI service not configured",
               content: {
                 "application/json": {
                   schema: { $ref: "#/components/schemas/ErrorResponse" },
