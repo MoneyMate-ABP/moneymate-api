@@ -1,5 +1,6 @@
 const cron = require("node-cron");
 const { sendDailyBudgetNotifications } = require("../services/pushService");
+const env = require("../config/env");
 
 let task;
 
@@ -8,19 +9,25 @@ function startDailyBudgetNotificationJob() {
     return task;
   }
 
-  task = cron.schedule("0 8 * * *", async () => {
-    try {
-      await sendDailyBudgetNotifications();
-      console.log(
-        "[MoneyMate] 08:00 daily budget push notification job executed.",
-      );
-    } catch (error) {
-      console.error(
-        "[MoneyMate] Daily budget push notification job failed:",
-        error,
-      );
-    }
-  });
+  task = cron.schedule(
+    "0 8 * * *",
+    async () => {
+      try {
+        await sendDailyBudgetNotifications();
+        console.log(
+          `[MoneyMate] 08:00 daily budget push notification job executed (timezone: ${env.appTimezone}).`,
+        );
+      } catch (error) {
+        console.error(
+          "[MoneyMate] Daily budget push notification job failed:",
+          error,
+        );
+      }
+    },
+    {
+      timezone: env.appTimezone,
+    },
+  );
 
   return task;
 }

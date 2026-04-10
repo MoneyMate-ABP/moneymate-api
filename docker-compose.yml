@@ -28,6 +28,8 @@ services:
     restart: unless-stopped
     env_file:
       - .env.docker
+    environment:
+      TZ: ${TZ:-Asia/Jakarta}
     depends_on:
       db:
         condition: service_healthy
