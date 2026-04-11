@@ -265,6 +265,10 @@ Notes:
 - `GET /api/budget-periods` supports optional `page` and `limit` query params.
 - `excluded_weekdays` menggunakan angka hari: `0=Sunday ... 6=Saturday`.
 - Setiap user memiliki maksimal satu default budget period (`is_default=true`).
+- `budget_system` tersedia 3 mode: `carry_over`, `invest`, `nothing` (default `nothing`).
+- `carry_over`: sisa/defisit hari ini dibawa ke hari berikutnya.
+- `invest`: sisa positif hari ini dipindahkan ke tabungan (tidak dibawa ke hari berikutnya).
+- `nothing`: tidak ada carry over dan tidak ada tabungan dari sisa harian.
 
 ### Dashboard
 

@@ -11,6 +11,28 @@ const {
 } = require("../utils/date");
 const { roundTo2, toNumber } = require("../utils/number");
 
+const BUDGET_SYSTEMS = {
+  CARRY_OVER: "carry_over",
+  INVEST: "invest",
+  NOTHING: "nothing",
+};
+
+function normalizeBudgetSystem(value) {
+  const raw = String(value || "")
+    .trim()
+    .toLowerCase();
+
+  if (raw === BUDGET_SYSTEMS.CARRY_OVER) {
+    return BUDGET_SYSTEMS.CARRY_OVER;
+  }
+
+  if (raw === BUDGET_SYSTEMS.INVEST) {
+    return BUDGET_SYSTEMS.INVEST;
+  }
+
+  return BUDGET_SYSTEMS.NOTHING;
+}
+
 function calculateDailyBudgetBase(totalBudget, workingDaysCount) {
   if (workingDaysCount <= 0) {
     return 0;
@@ -100,35 +122,51 @@ async function getDailyStatus(budgetPeriod, targetDate) {
   });
 
   let carryOver = 0;
+  let investedTotal = 0;
   let carryOverBeforeTarget = 0;
+  let investedBeforeTarget = 0;
   let baseForTarget = 0;
   let effectiveBudgetForTarget = 0;
   let spentForTarget = 0;
+  let investedForTarget = 0;
 
   const dailyBase = toNumber(budgetPeriod.daily_budget_base);
   const targetDateString = toDateString(targetDate);
+  const budgetSystem = normalizeBudgetSystem(budgetPeriod.budget_system);
+  const useCarryOver = budgetSystem === BUDGET_SYSTEMS.CARRY_OVER;
+  const useInvest = budgetSystem === BUDGET_SYSTEMS.INVEST;
 
   for (const day of days) {
     const dayString = toDateString(day);
     const excludedDay = isDayExcluded(day, excludedWeekdays);
     const base = excludedDay ? 0 : dailyBase;
-    const effectiveBudget = roundTo2(base + carryOver);
+    const carryOverApplied = useCarryOver ? carryOver : 0;
+    const effectiveBudget = roundTo2(base + carryOverApplied);
     const spent = roundTo2(spentMap.get(dayString) || 0);
+    const dayRemaining = roundTo2(effectiveBudget - spent);
+    const investedToday = useInvest && dayRemaining > 0 ? dayRemaining : 0;
 
     if (dayString === targetDateString) {
-      carryOverBeforeTarget = roundTo2(carryOver);
+      carryOverBeforeTarget = roundTo2(carryOverApplied);
+      investedBeforeTarget = roundTo2(investedTotal);
       baseForTarget = roundTo2(base);
       effectiveBudgetForTarget = effectiveBudget;
       spentForTarget = spent;
+      investedForTarget = roundTo2(investedToday);
     }
 
-    carryOver = roundTo2(effectiveBudget - spent);
+    carryOver = roundTo2(dayRemaining);
+    investedTotal = roundTo2(investedTotal + investedToday);
   }
 
   return {
     date: targetDateString,
+    budget_system: budgetSystem,
     base: baseForTarget,
     carry_over: carryOverBeforeTarget,
+    invested_before: investedBeforeTarget,
+    invested_today: investedForTarget,
+    invested_total: roundTo2(investedBeforeTarget + investedForTarget),
     effective_budget: effectiveBudgetForTarget,
     total_spent: spentForTarget,
     remaining: roundTo2(effectiveBudgetForTarget - spentForTarget),
@@ -139,9 +177,11 @@ async function getDailyStatus(budgetPeriod, targetDate) {
 
 module.exports = {
   calculateDailyBudgetBase,
+  BUDGET_SYSTEMS,
   getBudgetPeriodById,
   getDailyStatus,
   getWorkingDaysCount,
+  normalizeBudgetSystem,
   normalizeExcludedWeekdays,
   parseExcludedWeekdays,
 };

@@ -8,6 +8,7 @@ const {
   toDateString,
 } = require("../utils/date");
 const { roundTo2, toNumber } = require("../utils/number");
+const { getDailyStatus } = require("./budgetService");
 
 let vapidConfigured = false;
 
@@ -146,39 +147,12 @@ async function getSpentMapByDate({ userId, categoryId, startDate, endDate }) {
 }
 
 async function calculateEffectiveBudgetForToday(period, todayDate) {
-  const startDate = parseDate(period.start_date, "start_date");
   const today = parseDate(todayDate, "today");
-  const targetDateString = toDateString(today);
-  const dailyBase = toNumber(period.daily_budget_base);
-
-  const spentMap = await getSpentMapByDate({
-    userId: period.user_id,
-    categoryId: period.category_id,
-    startDate,
-    endDate: today,
-  });
-
-  let carryOver = 0;
-  let carryOverBeforeTarget = 0;
-  let effectiveBudgetForTarget = 0;
-
-  for (const day of listDatesInclusive(startDate, today)) {
-    const dayString = toDateString(day);
-    const base = isWeekend(day) ? 0 : dailyBase;
-    const effectiveBudget = roundTo2(base + carryOver);
-    const spentThatDay = roundTo2(spentMap.get(dayString) || 0);
-
-    if (dayString === targetDateString) {
-      carryOverBeforeTarget = roundTo2(carryOver);
-      effectiveBudgetForTarget = effectiveBudget;
-    }
-
-    carryOver = roundTo2(effectiveBudget - spentThatDay);
-  }
+  const status = await getDailyStatus(period, today);
 
   return {
-    effectiveBudget: effectiveBudgetForTarget,
-    carryOverFromYesterday: carryOverBeforeTarget,
+    effectiveBudget: toNumber(status.effective_budget),
+    carryOverFromYesterday: toNumber(status.carry_over),
   };
 }
 

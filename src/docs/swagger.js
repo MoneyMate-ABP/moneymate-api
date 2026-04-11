@@ -362,6 +362,13 @@ const options = {
               description:
                 "Hari yang dikecualikan dari perhitungan budget harian",
             },
+            budget_system: {
+              type: "string",
+              enum: ["carry_over", "invest", "nothing"],
+              example: "nothing",
+              description:
+                "Mode budget harian: carry_over (sisa/defisit dibawa), invest (sisa positif ditabung), nothing (tanpa carry).",
+            },
             is_default: { type: "boolean", example: true },
             created_at: {
               type: "string",
@@ -408,6 +415,11 @@ const options = {
               description:
                 "Hari yang dikecualikan dari budget harian. 0 = Minggu, 6 = Sabtu",
             },
+            budget_system: {
+              type: "string",
+              enum: ["carry_over", "invest", "nothing"],
+              example: "nothing",
+            },
             is_default: {
               type: "boolean",
               example: true,
@@ -437,6 +449,11 @@ const options = {
                 maximum: 6,
               },
               example: [0, 6],
+            },
+            budget_system: {
+              type: "string",
+              enum: ["carry_over", "invest", "nothing"],
+              example: "nothing",
             },
             is_default: { type: "boolean", example: false },
           },

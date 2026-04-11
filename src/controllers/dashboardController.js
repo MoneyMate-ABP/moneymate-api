@@ -43,6 +43,7 @@ async function getDashboard(req, res) {
       return {
         budget_period_id: period.id,
         name: period.name,
+        budget_system: period.budget_system || "nothing",
         category_id: period.category_id,
         category_name: period.category_name,
         category_type: period.category_type,

@@ -10,15 +10,22 @@ const {
 const { toNumber } = require("../utils/number");
 const { buildPaginationMeta, parsePagination } = require("../utils/pagination");
 const {
+  BUDGET_SYSTEMS,
   calculateDailyBudgetBase,
   getBudgetPeriodById,
   getDailyStatus,
   getWorkingDaysCount,
+  normalizeBudgetSystem,
   normalizeExcludedWeekdays,
   parseExcludedWeekdays,
 } = require("../services/budgetService");
 
 const excludedWeekdaysSchema = z.array(z.coerce.number().int().min(0).max(6));
+const budgetSystemSchema = z.enum([
+  BUDGET_SYSTEMS.CARRY_OVER,
+  BUDGET_SYSTEMS.INVEST,
+  BUDGET_SYSTEMS.NOTHING,
+]);
 
 const createBudgetPeriodSchema = z.object({
   category_id: z.coerce.number().int().positive().nullable().optional(),
@@ -27,6 +34,7 @@ const createBudgetPeriodSchema = z.object({
   start_date: z.string().min(1),
   end_date: z.string().min(1),
   excluded_weekdays: excludedWeekdaysSchema.optional().default([0, 6]),
+  budget_system: budgetSystemSchema.optional().default(BUDGET_SYSTEMS.NOTHING),
   is_default: z.boolean().optional().default(false),
 });
 
@@ -38,6 +46,7 @@ const updateBudgetPeriodSchema = z
     start_date: z.string().optional(),
     end_date: z.string().optional(),
     excluded_weekdays: excludedWeekdaysSchema.optional(),
+    budget_system: budgetSystemSchema.optional(),
     is_default: z.boolean().optional(),
   })
   .refine((value) => Object.keys(value).length > 0, {
@@ -64,6 +73,7 @@ function toBudgetPeriodResponse(period) {
     start_date: normalizeDateString(period.start_date, "start_date"),
     end_date: normalizeDateString(period.end_date, "end_date"),
     excluded_weekdays: parseExcludedWeekdays(period.excluded_weekdays),
+    budget_system: normalizeBudgetSystem(period.budget_system),
     is_default: Boolean(period.is_default),
   };
 }
@@ -159,6 +169,7 @@ async function createBudgetPeriod(req, res) {
   await ensureCategoryExists(payload.category_id);
 
   const excludedWeekdays = normalizeExcludedWeekdays(payload.excluded_weekdays);
+  const budgetSystem = normalizeBudgetSystem(payload.budget_system);
 
   const workingDaysCount = getWorkingDaysCount(
     startDate,
@@ -208,6 +219,7 @@ async function createBudgetPeriod(req, res) {
         daily_budget_base: dailyBudgetBase,
         working_days_count: workingDaysCount,
         excluded_weekdays: JSON.stringify(excludedWeekdays),
+        budget_system: budgetSystem,
         is_default: shouldSetDefault,
       })
       .returning("id");
@@ -263,6 +275,11 @@ async function updateBudgetPeriod(req, res) {
       ? normalizeExcludedWeekdays(payload.excluded_weekdays)
       : parseExcludedWeekdays(budgetPeriod.excluded_weekdays);
 
+  const nextBudgetSystem =
+    typeof payload.budget_system !== "undefined"
+      ? normalizeBudgetSystem(payload.budget_system)
+      : normalizeBudgetSystem(budgetPeriod.budget_system);
+
   ensureDateRange(nextStartDate, nextEndDate);
 
   const workingDaysCount = getWorkingDaysCount(
@@ -304,6 +321,7 @@ async function updateBudgetPeriod(req, res) {
         daily_budget_base: dailyBudgetBase,
         working_days_count: workingDaysCount,
         excluded_weekdays: JSON.stringify(nextExcludedWeekdays),
+        budget_system: nextBudgetSystem,
         is_default: shouldSetDefault ? true : Boolean(budgetPeriod.is_default),
       });
   });
