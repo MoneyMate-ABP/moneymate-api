@@ -425,7 +425,7 @@ async function getBudgetDailyStatus(req, res) {
 async function getInvestSavingsSummary(req, res) {
   const today = startOfToday();
 
-  const periods = await db("budget_periods")
+  const allUserPeriods = await db("budget_periods")
     .leftJoin("categories", "budget_periods.category_id", "categories.id")
     .select(
       "budget_periods.*",
@@ -433,8 +433,12 @@ async function getInvestSavingsSummary(req, res) {
       "categories.type as category_type",
     )
     .where("budget_periods.user_id", req.user.id)
-    .andWhere("budget_periods.budget_system", BUDGET_SYSTEMS.INVEST)
     .orderBy("budget_periods.created_at", "desc");
+
+  const periods = allUserPeriods.filter(
+    (period) =>
+      normalizeBudgetSystem(period.budget_system) === BUDGET_SYSTEMS.INVEST,
+  );
 
   const data = await Promise.all(
     periods.map(async (period) => {

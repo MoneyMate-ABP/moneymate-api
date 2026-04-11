@@ -21,12 +21,22 @@ function normalizeBudgetSystem(value) {
   const raw = String(value || "")
     .trim()
     .toLowerCase();
+  const sanitized = raw.replace(/[\s-]+/g, "_");
 
-  if (raw === BUDGET_SYSTEMS.CARRY_OVER) {
+  if (
+    sanitized === BUDGET_SYSTEMS.CARRY_OVER ||
+    sanitized === "carryover" ||
+    sanitized === "carry"
+  ) {
     return BUDGET_SYSTEMS.CARRY_OVER;
   }
 
-  if (raw === BUDGET_SYSTEMS.INVEST) {
+  if (
+    sanitized === BUDGET_SYSTEMS.INVEST ||
+    sanitized === "invest_system" ||
+    sanitized === "investment" ||
+    sanitized === "tabungan"
+  ) {
     return BUDGET_SYSTEMS.INVEST;
   }
 
