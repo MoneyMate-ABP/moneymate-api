@@ -56,14 +56,15 @@ run "Fetching latest git changes" git fetch origin "$BRANCH"
 run "Checking out branch $BRANCH" git checkout "$BRANCH"
 run "Pulling latest commit (fast-forward only)" git pull --ff-only origin "$BRANCH"
 
-log "Building and starting API container (database volume is preserved)"
-if ! compose up -d --build api; then
-  log "Compose up failed. Attempting safe recovery for legacy ContainerConfig error..."
-  compose rm -sf api || true
-  compose up -d --build --no-deps api
-fi
-
 run "Ensuring DB service is running" compose up -d db
+
+run "Building latest API image" compose build api
+
+log "Removing old API container to avoid docker-compose v1 recreate bug"
+compose rm -sf api || true
+
+run "Starting fresh API container (database volume is preserved)" \
+  compose up -d --no-deps api
 
 run "Running migrate:latest (no reset)" compose exec -T api npm run migrate
 
