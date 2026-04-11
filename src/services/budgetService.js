@@ -112,39 +112,63 @@ async function getSpentMapByDate({ userId, categoryId, startDate, endDate }) {
 }
 
 async function getDailyStatus(budgetPeriod, targetDate) {
-  ensureDateWithinRange(
+  const statuses = await getDailyStatusesInRange(
+    budgetPeriod,
     targetDate,
-    parseDate(budgetPeriod.start_date, "start_date"),
-    parseDate(budgetPeriod.end_date, "end_date"),
-    "target date",
+    targetDate,
   );
 
-  const startDate = parseDate(budgetPeriod.start_date, "start_date");
-  const days = listDatesInclusive(startDate, targetDate);
+  return statuses[0] || null;
+}
+
+async function getDailyStatusesInRange(
+  budgetPeriod,
+  rangeStartDate,
+  rangeEndDate,
+) {
+  const periodStartDate = parseDate(budgetPeriod.start_date, "start_date");
+  const periodEndDate = parseDate(budgetPeriod.end_date, "end_date");
+
+  ensureDateWithinRange(
+    rangeStartDate,
+    periodStartDate,
+    periodEndDate,
+    "start_date",
+  );
+  ensureDateWithinRange(
+    rangeEndDate,
+    periodStartDate,
+    periodEndDate,
+    "end_date",
+  );
+
+  if (rangeStartDate > rangeEndDate) {
+    const error = new Error("start_date cannot be greater than end_date.");
+    error.statusCode = 400;
+    throw error;
+  }
+
+  const days = listDatesInclusive(periodStartDate, rangeEndDate);
   const excludedWeekdays = parseExcludedWeekdays(
     budgetPeriod.excluded_weekdays,
   );
   const spentMap = await getSpentMapByDate({
     userId: budgetPeriod.user_id,
     categoryId: budgetPeriod.category_id,
-    startDate,
-    endDate: targetDate,
+    startDate: periodStartDate,
+    endDate: rangeEndDate,
   });
 
   let carryOver = 0;
   let investedTotal = 0;
-  let carryOverBeforeTarget = 0;
-  let investedBeforeTarget = 0;
-  let baseForTarget = 0;
-  let effectiveBudgetForTarget = 0;
-  let spentForTarget = 0;
-  let investedForTarget = 0;
 
   const dailyBase = toNumber(budgetPeriod.daily_budget_base);
-  const targetDateString = toDateString(targetDate);
+  const rangeStartString = toDateString(rangeStartDate);
+  const rangeEndString = toDateString(rangeEndDate);
   const budgetSystem = normalizeBudgetSystem(budgetPeriod.budget_system);
   const useCarryOver = budgetSystem === BUDGET_SYSTEMS.CARRY_OVER;
   const useInvest = budgetSystem === BUDGET_SYSTEMS.INVEST;
+  const statuses = [];
 
   for (const day of days) {
     const dayString = toDateString(day);
@@ -156,33 +180,31 @@ async function getDailyStatus(budgetPeriod, targetDate) {
     const dayRemaining = roundTo2(effectiveBudget - spent);
     const investedToday = useInvest && dayRemaining > 0 ? dayRemaining : 0;
 
-    if (dayString === targetDateString) {
-      carryOverBeforeTarget = roundTo2(carryOverApplied);
-      investedBeforeTarget = roundTo2(investedTotal);
-      baseForTarget = roundTo2(base);
-      effectiveBudgetForTarget = effectiveBudget;
-      spentForTarget = spent;
-      investedForTarget = roundTo2(investedToday);
+    if (dayString >= rangeStartString && dayString <= rangeEndString) {
+      const investedBefore = roundTo2(investedTotal);
+      const investedForDay = roundTo2(investedToday);
+
+      statuses.push({
+        date: dayString,
+        budget_system: budgetSystem,
+        base: roundTo2(base),
+        carry_over: roundTo2(carryOverApplied),
+        invested_before: investedBefore,
+        invested_today: investedForDay,
+        invested_total: roundTo2(investedBefore + investedForDay),
+        effective_budget: effectiveBudget,
+        total_spent: spent,
+        remaining: dayRemaining,
+        is_excluded_day: excludedDay,
+        is_weekend: isWeekend(day),
+      });
     }
 
     carryOver = roundTo2(dayRemaining);
     investedTotal = roundTo2(investedTotal + investedToday);
   }
 
-  return {
-    date: targetDateString,
-    budget_system: budgetSystem,
-    base: baseForTarget,
-    carry_over: carryOverBeforeTarget,
-    invested_before: investedBeforeTarget,
-    invested_today: investedForTarget,
-    invested_total: roundTo2(investedBeforeTarget + investedForTarget),
-    effective_budget: effectiveBudgetForTarget,
-    total_spent: spentForTarget,
-    remaining: roundTo2(effectiveBudgetForTarget - spentForTarget),
-    is_excluded_day: isDayExcluded(targetDate, excludedWeekdays),
-    is_weekend: isWeekend(targetDate),
-  };
+  return statuses;
 }
 
 module.exports = {
@@ -190,6 +212,7 @@ module.exports = {
   BUDGET_SYSTEMS,
   getBudgetPeriodById,
   getDailyStatus,
+  getDailyStatusesInRange,
   getWorkingDaysCount,
   normalizeBudgetSystem,
   normalizeExcludedWeekdays,

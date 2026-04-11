@@ -15,6 +15,7 @@ const {
   calculateDailyBudgetBase,
   getBudgetPeriodById,
   getDailyStatus,
+  getDailyStatusesInRange,
   getWorkingDaysCount,
   normalizeBudgetSystem,
   normalizeExcludedWeekdays,
@@ -422,6 +423,45 @@ async function getBudgetDailyStatus(req, res) {
   return res.json({ data });
 }
 
+async function getBudgetDailyStatuses(req, res) {
+  const budgetPeriodId = Number(req.params.id);
+
+  const budgetPeriod = await getBudgetPeriodById(req.user.id, budgetPeriodId);
+  if (!budgetPeriod) {
+    return res.status(404).json({ message: "Budget period not found." });
+  }
+
+  const periodStartDate = parseDate(budgetPeriod.start_date, "start_date");
+  const periodEndDate = parseDate(budgetPeriod.end_date, "end_date");
+
+  const startDate = req.query.start_date
+    ? parseDate(req.query.start_date, "start_date")
+    : periodStartDate;
+  const endDate = req.query.end_date
+    ? parseDate(req.query.end_date, "end_date")
+    : periodEndDate;
+
+  ensureDateRange(startDate, endDate);
+
+  if (startDate < periodStartDate || endDate > periodEndDate) {
+    return res.status(400).json({
+      message:
+        "Date range must be within budget period start_date and end_date.",
+    });
+  }
+
+  const data = await getDailyStatusesInRange(budgetPeriod, startDate, endDate);
+
+  return res.json({
+    data,
+    meta: {
+      start_date: toDateString(startDate),
+      end_date: toDateString(endDate),
+      count: data.length,
+    },
+  });
+}
+
 async function getInvestSavingsSummary(req, res) {
   const today = startOfToday();
 
@@ -542,6 +582,7 @@ module.exports = {
   createBudgetPeriod,
   deleteBudgetPeriod,
   getBudgetDailyStatus,
+  getBudgetDailyStatuses,
   getInvestSavingsSummary,
   listBudgetPeriods,
   setDefaultBudgetPeriod,

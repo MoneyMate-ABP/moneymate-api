@@ -40,5 +40,10 @@ router.get(
   authenticate,
   asyncHandler(budgetPeriodController.getBudgetDailyStatus),
 );
+router.get(
+  "/:id/daily-statuses",
+  authenticate,
+  asyncHandler(budgetPeriodController.getBudgetDailyStatuses),
+);
 
 module.exports = router;
