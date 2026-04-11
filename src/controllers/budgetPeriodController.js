@@ -3,11 +3,12 @@ const { z } = require("zod");
 const db = require("../config/db");
 const { extractInsertedId } = require("../utils/db");
 const {
+  listDatesInclusive,
   normalizeDateString,
   parseDate,
   toDateString,
 } = require("../utils/date");
-const { toNumber } = require("../utils/number");
+const { roundTo2, toNumber } = require("../utils/number");
 const { buildPaginationMeta, parsePagination } = require("../utils/pagination");
 const {
   BUDGET_SYSTEMS,
@@ -421,10 +422,123 @@ async function getBudgetDailyStatus(req, res) {
   return res.json({ data });
 }
 
+async function getInvestSavingsSummary(req, res) {
+  const today = startOfToday();
+
+  const periods = await db("budget_periods")
+    .leftJoin("categories", "budget_periods.category_id", "categories.id")
+    .select(
+      "budget_periods.*",
+      "categories.name as category_name",
+      "categories.type as category_type",
+    )
+    .where("budget_periods.user_id", req.user.id)
+    .andWhere("budget_periods.budget_system", BUDGET_SYSTEMS.INVEST)
+    .orderBy("budget_periods.created_at", "desc");
+
+  const data = await Promise.all(
+    periods.map(async (period) => {
+      const startDate = parseDate(period.start_date, "start_date");
+      const endDate = parseDate(period.end_date, "end_date");
+      const effectiveEndDate = endDate > today ? today : endDate;
+
+      if (startDate > effectiveEndDate) {
+        return {
+          budget_period_id: period.id,
+          name: period.name,
+          category_id: period.category_id,
+          category_name: period.category_name,
+          category_type: period.category_type,
+          start_date: normalizeDateString(period.start_date, "start_date"),
+          end_date: normalizeDateString(period.end_date, "end_date"),
+          total_budget: toNumber(period.total_budget),
+          daily_budget_base: toNumber(period.daily_budget_base),
+          invested_total: 0,
+          tracked_days: 0,
+          tracked_start_date: null,
+          tracked_end_date: null,
+        };
+      }
+
+      const excludedWeekdays = parseExcludedWeekdays(period.excluded_weekdays);
+      const dates = listDatesInclusive(startDate, effectiveEndDate);
+      const spentRows = await db("transactions")
+        .select("date")
+        .sum({ total: "amount" })
+        .where({
+          user_id: req.user.id,
+          type: "expense",
+        })
+        .andWhere("date", ">=", toDateString(startDate))
+        .andWhere("date", "<=", toDateString(effectiveEndDate))
+        .modify((queryBuilder) => {
+          if (period.category_id) {
+            queryBuilder.andWhere("category_id", period.category_id);
+          }
+        })
+        .groupBy("date");
+
+      const spentByDate = new Map(
+        spentRows.map((row) => [
+          normalizeDateString(row.date, "date"),
+          toNumber(row.total),
+        ]),
+      );
+
+      const base = toNumber(period.daily_budget_base);
+      let investedTotal = 0;
+      let trackedDays = 0;
+
+      for (const date of dates) {
+        const dateStr = toDateString(date);
+        if (excludedWeekdays.includes(date.getDay())) {
+          continue;
+        }
+
+        trackedDays += 1;
+        const spent = toNumber(spentByDate.get(dateStr) || 0);
+        const remaining = roundTo2(base - spent);
+        if (remaining > 0) {
+          investedTotal = roundTo2(investedTotal + remaining);
+        }
+      }
+
+      return {
+        budget_period_id: period.id,
+        name: period.name,
+        category_id: period.category_id,
+        category_name: period.category_name,
+        category_type: period.category_type,
+        start_date: normalizeDateString(period.start_date, "start_date"),
+        end_date: normalizeDateString(period.end_date, "end_date"),
+        total_budget: toNumber(period.total_budget),
+        daily_budget_base: base,
+        invested_total: investedTotal,
+        tracked_days: trackedDays,
+        tracked_start_date: toDateString(startDate),
+        tracked_end_date: toDateString(effectiveEndDate),
+      };
+    }),
+  );
+
+  const total_invested = roundTo2(
+    data.reduce((sum, item) => sum + toNumber(item.invested_total), 0),
+  );
+
+  return res.json({
+    data: {
+      total_invested,
+      period_count: data.length,
+      periods: data,
+    },
+  });
+}
+
 module.exports = {
   createBudgetPeriod,
   deleteBudgetPeriod,
   getBudgetDailyStatus,
+  getInvestSavingsSummary,
   listBudgetPeriods,
   setDefaultBudgetPeriod,
   updateBudgetPeriod,

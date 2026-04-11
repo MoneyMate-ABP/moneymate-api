@@ -15,6 +15,11 @@ router.post(
   authenticate,
   asyncHandler(budgetPeriodController.createBudgetPeriod),
 );
+router.get(
+  "/invest-savings",
+  authenticate,
+  asyncHandler(budgetPeriodController.getInvestSavingsSummary),
+);
 router.put(
   "/:id",
   authenticate,
