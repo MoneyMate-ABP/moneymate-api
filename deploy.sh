@@ -24,8 +24,8 @@ if ! command -v docker >/dev/null 2>&1; then
   exit 1
 fi
 
-if ! docker compose version >/dev/null 2>&1; then
-  echo "Error: docker compose plugin is not available." >&2
+if ! docker-compose version >/dev/null 2>&1; then
+  echo "Error: docker-compose plugin is not available." >&2
   exit 1
 fi
 
@@ -44,12 +44,12 @@ run "Checking out branch $BRANCH" git checkout "$BRANCH"
 run "Pulling latest commit (fast-forward only)" git pull --ff-only origin "$BRANCH"
 
 run "Building and starting API container (database volume is preserved)" \
-  docker compose up -d --build api
+  docker-compose up -d --build api
 
-run "Ensuring DB service is running" docker compose up -d db
+run "Ensuring DB service is running" docker-compose up -d db
 
-run "Running migrate:latest (no reset)" docker compose exec -T api npm run migrate
+run "Running migrate:latest (no reset)" docker-compose exec -T api npm run migrate
 
-run "Deployment complete. Current container status:" docker compose ps
+run "Deployment complete. Current container status:" docker-compose ps
 
 log "Done. Database data is preserved (no migrate:fresh / no volume deletion)."
