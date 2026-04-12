@@ -12,19 +12,16 @@ const receiptUpload = multer({
     fileSize: 5 * 1024 * 1024,
   },
   fileFilter: (req, file, cb) => {
-    const allowedMimeTypes = new Set([
-      "image/jpeg",
-      "image/png",
-      "image/webp",
-      "application/pdf",
-    ]);
+    const mimeType = String(file.mimetype || "").toLowerCase();
+    const isPdf = mimeType === "application/pdf";
+    const isImage = mimeType.startsWith("image/");
 
-    if (allowedMimeTypes.has(file.mimetype)) {
+    if (isPdf || isImage) {
       return cb(null, true);
     }
 
     const error = new Error(
-      "Unsupported receipt file type. Use JPG, PNG, WEBP, or PDF.",
+      "Unsupported receipt file type. Use image formats or PDF.",
     );
     error.statusCode = 400;
     return cb(error);

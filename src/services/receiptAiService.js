@@ -1,5 +1,6 @@
 const env = require("../config/env");
 const { parseDate, toDateString } = require("../utils/date");
+const sharp = require("sharp");
 
 const RECEIPT_PROMPT = `You are an OCR + receipt parser for Indonesian receipts.
 Extract transaction data from the provided receipt image/document.
@@ -191,6 +192,48 @@ function extractModelText(payload) {
   return textPart?.text || "";
 }
 
+function replaceFileExtensionWithPng(fileName) {
+  const source = String(fileName || "receipt").trim() || "receipt";
+  return source.replace(/\.[a-z0-9]+$/i, "") + ".png";
+}
+
+async function prepareReceiptInputForAi({ fileBuffer, mimeType, fileName }) {
+  const normalizedMimeType = String(mimeType || "").toLowerCase();
+
+  if (normalizedMimeType === "application/pdf") {
+    return {
+      fileBuffer,
+      mimeType: "application/pdf",
+      fileName,
+    };
+  }
+
+  if (!normalizedMimeType.startsWith("image/")) {
+    const error = new Error("Unsupported receipt file type for AI processing.");
+    error.statusCode = 400;
+    throw error;
+  }
+
+  try {
+    const pngBuffer = await sharp(fileBuffer)
+      .rotate()
+      .png({ compressionLevel: 9, adaptiveFiltering: true })
+      .toBuffer();
+
+    return {
+      fileBuffer: pngBuffer,
+      mimeType: "image/png",
+      fileName: replaceFileExtensionWithPng(fileName),
+    };
+  } catch (_error) {
+    const error = new Error(
+      "Image could not be processed. Please upload a clearer receipt image.",
+    );
+    error.statusCode = 422;
+    throw error;
+  }
+}
+
 async function analyzeReceiptWithGemini({
   fileBuffer,
   mimeType,
@@ -198,6 +241,12 @@ async function analyzeReceiptWithGemini({
   categories,
 }) {
   ensureConfigured();
+
+  const preparedInput = await prepareReceiptInputForAi({
+    fileBuffer,
+    mimeType,
+    fileName,
+  });
 
   const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(
     env.geminiModel,
@@ -211,8 +260,8 @@ async function analyzeReceiptWithGemini({
           { text: buildPrompt(categories) },
           {
             inline_data: {
-              mime_type: mimeType,
-              data: fileBuffer.toString("base64"),
+              mime_type: preparedInput.mimeType,
+              data: preparedInput.fileBuffer.toString("base64"),
             },
           },
         ],
@@ -256,8 +305,8 @@ async function analyzeReceiptWithGemini({
 
   return {
     ...normalized,
-    source_file_name: fileName || null,
-    source_mime_type: mimeType || null,
+    source_file_name: preparedInput.fileName || null,
+    source_mime_type: preparedInput.mimeType || null,
   };
 }
 
