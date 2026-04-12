@@ -6,10 +6,16 @@ const { authenticate } = require("../middleware/auth");
 
 const router = express.Router();
 
+const receiptMaxFileSizeMb = Math.max(
+  1,
+  Number(process.env.RECEIPT_MAX_FILE_SIZE_MB || 10),
+);
+const receiptMaxFileSizeBytes = Math.floor(receiptMaxFileSizeMb * 1024 * 1024);
+
 const receiptUpload = multer({
   storage: multer.memoryStorage(),
   limits: {
-    fileSize: 5 * 1024 * 1024,
+    fileSize: receiptMaxFileSizeBytes,
   },
   fileFilter: (req, file, cb) => {
     const mimeType = String(file.mimetype || "").toLowerCase();
@@ -36,7 +42,7 @@ function receiptUploadMiddleware(req, res, next) {
 
     if (error.code === "LIMIT_FILE_SIZE") {
       error.statusCode = 400;
-      error.message = "Receipt file is too large. Maximum size is 5MB.";
+      error.message = `Receipt file is too large. Maximum size is ${receiptMaxFileSizeMb}MB.`;
     }
 
     return next(error);
